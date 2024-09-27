@@ -8,8 +8,6 @@ require "debug"
 
 file = ARGV[0]
 export_path = ARGV[1]
-converter = AtomicAssessmentsImports::CSV::Converter.new(file)
-res = converter.convert
-
+res = AtomicAssessmentsImports.convert(file)
 AtomicAssessmentsImports::Export.create(export_path, res)
 

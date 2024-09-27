@@ -3,6 +3,7 @@ PATH
   specs:
     atomic_assessments_imports (0.1.0)
       activesupport
+      mimemagic
       rubyzip
 
 GEM
@@ -35,9 +36,19 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     logger (1.6.1)
+    mimemagic (0.4.3)
+      nokogiri (~> 1)
+      rake
+    mini_portile2 (2.8.7)
     minitest (5.25.1)
+    nokogiri (1.16.7)
+      mini_portile2 (~> 2.8.2)
+      racc (~> 1.4)
+    nokogiri (1.16.7-arm64-darwin)
+      racc (~> 1.4)
     psych (5.1.2)
       stringio
+    racc (1.8.1)
     rake (13.2.1)
     rdoc (6.7.0)
       psych (>= 4.0.0)

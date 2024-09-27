@@ -33,7 +33,6 @@ module AtomicAssessmentsImports
 
       def convert_row(row)
         question = Questions::MultipleChoice.new(row)
-        puts question.to_learnosity
 
         item = {
           reference: question.question_reference + "-item",

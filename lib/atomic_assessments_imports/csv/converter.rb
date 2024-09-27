@@ -16,10 +16,10 @@ module AtomicAssessmentsImports
 
         ::CSV.foreach(@file, headers: true) do |row|
           sanitized = row.map { |k, v| [k.strip, v&.strip] }
-          item, csv_widget = convert_row(sanitized)
+          item, csv_widgets = convert_row(sanitized)
 
           items << item
-          widgets += csv_widget
+          widgets.concat(csv_widgets)
         end
 
         {

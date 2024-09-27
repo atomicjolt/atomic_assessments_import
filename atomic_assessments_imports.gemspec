@@ -31,4 +31,7 @@ Gem::Specification.new do |spec|
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
+
+  spec.add_dependency "rubyzip"
+  spec.add_dependency "activesupport"
 end

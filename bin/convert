@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "atomic_assessments_imports"
+require "debug"
+
+
+file = ARGV[0]
+export_path = ARGV[1]
+converter = AtomicAssessmentsImports::CSV::Converter.new(file)
+res = converter.convert
+
+AtomicAssessmentsImports::Export.create(export_path, res)
+

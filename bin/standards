@@ -1,0 +1,109 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "csv"
+require "atomic_assessments_imports"
+require "securerandom"
+require "json"
+require "debug"
+
+file = ARGV[0]
+source = "ab_connect"
+grade_levels = ["Helixbar"]
+
+standards = {}
+
+
+CSV.foreach(file, headers: true) do |row|
+  subject = row["Tag: Subject"]
+  standard_uuid = standards.dig(subject, :guid) || SecureRandom.uuid
+
+  topic = row["Tag: Topic"]
+  topic_uuid = standards.dig(topic, :guid) || SecureRandom.uuid
+
+  subtopic= row["Tag: Subtopic"]
+  subtopic_uuid = standards.dig(subtopic, :guid) || SecureRandom.uuid
+
+  next if subject.nil?
+  standards[subject] ||=  {
+    source:,
+    grade_levels:,
+    guid: standard_uuid,
+    depth: 0,
+    path: "",
+    name: subject,
+    description: subject,
+    state: "IN",
+    status: "active",
+    new_guids: [],
+    has_children: true,
+  }
+
+  next if topic.nil?
+  standards[topic] ||= {
+    source:,
+    grade_levels:,
+    guid: topic_uuid,
+    depth: 1,
+    path: "#{standard_uuid}",
+    name: topic,
+    description: topic,
+    state: "IN",
+    status: "active",
+    new_guids: [],
+    has_children: true,
+  }
+
+
+  next if subtopic.nil?
+  standards[subtopic] ||= {
+    source:,
+    grade_levels:,
+    guid: subtopic_uuid,
+    depth: 2,
+    path: "#{standard_uuid}/#{topic_uuid}",
+    name: subtopic,
+    description: subtopic,
+    state: "IN",
+    status: "active",
+    new_guids: [],
+    has_children: false,
+  }
+end
+
+# csv = CSV.open("standards.csv", "w")
+
+# csv << [
+#   "source",
+#   "uuid",
+#   "grade_levels",
+#   "depth",
+#   "path",
+#   "name",
+#   "description",
+#   "state",
+#   "status",
+#   "new_guids",
+#   "has_children",
+# ]
+
+# standards.each do |name, standard|
+#   csv << [
+#     standard[:source],
+#     standard[:uuid],
+#     standard[:grade_levels],
+#     standard[:depth],
+#     standard[:path],
+#     standard[:name],
+#     standard[:description],
+#     standard[:state],
+#     standard[:status],
+#     standard[:new_guids],
+#     standard[:has_children],
+#   ]
+# end
+
+
+puts JSON.pretty_generate(standards.values)
+

@@ -1,8 +1,10 @@
-module AtomicAssessmentsImports
+# frozen_string_literal: true
+
+module AtomicAssessmentsImport
   module Export
     def self.create(path, data)
-      AtomicAssessmentsImports::Writer.new(path).open do |writer|
-        writer.write("export.json", {version: 2.0}.to_json)
+      AtomicAssessmentsImport::Writer.new(path).open do |writer|
+        writer.write("export.json", { version: 2.0 }.to_json)
 
         data[:activities].each do |activity|
           writer.write("activities/#{activity[:reference]}.json", activity.to_json)

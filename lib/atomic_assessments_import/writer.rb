@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "zip"
 
-module AtomicAssessmentsImports
+module AtomicAssessmentsImport
   class Writer
     def initialize(path)
       @path = path

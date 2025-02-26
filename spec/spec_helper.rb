@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "atomic_assessments_imports"
+require "atomic_assessments_import"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

@@ -1,0 +1,37 @@
+name: rspec
+
+on: pull_request
+
+jobs:
+  rspec-test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ruby-version: [3.3]
+
+    # Service containers to run with `container-job`
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby ${{ matrix.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Install dependencies
+        env:
+          RAILS_ENV: test
+          RAILS_GROUPS: build
+        run: |
+          bundle install
+
+      - name: Run tests
+        env:
+          RAILS_ENV: test
+        run: bundle exec rspec
+
+

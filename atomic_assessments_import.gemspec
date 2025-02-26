@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-require_relative "lib/atomic_assessments_imports/version"
+require_relative "lib/atomic_assessments_import/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "atomic_assessments_imports"
-  spec.version = AtomicAssessmentsImports::VERSION
-  spec.authors = ["Sean Collings"]
-  spec.email = ["sean.collings@atomicjolt.com"]
+  spec.name = "atomic_assessments_import"
+  spec.version = AtomicAssessmentsImport::VERSION
+  spec.authors = ["Sean Collings", "Matt Petro"]
+  spec.email = ["support@atomicjolt.com"]
 
   spec.summary = "Importer to Convert different formats to AA's import format"
   spec.description = "Importer to Convert different formats to AA's import format"
-  spec.homepage = "https://github.com/atomicjolt/qti_to_learnosity_converter"
-  spec.required_ruby_version = ">= 3.0.0"
+  spec.homepage = "https://github.com/atomicjolt/atomic_assessments_import"
+  spec.required_ruby_version = ">= 3.3.0"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -32,7 +32,8 @@ Gem::Specification.new do |spec|
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
 
-  spec.add_dependency "rubyzip"
   spec.add_dependency "activesupport"
+  spec.add_dependency "csv"
   spec.add_dependency "mimemagic"
+  spec.add_dependency "rubyzip"
 end

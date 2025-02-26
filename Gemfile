@@ -2,11 +2,22 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in atomic_assessments_imports.gemspec
+# Specify your gem's dependencies in atomic_assessments_import.gemspec
 gemspec
 
-gem "rake", "~> 13.0"
+group :development, :test, :linter do
+  gem "byebug"
+  gem "rubocop"
+  gem "rubocop-performance"
+  gem "rubocop-rspec"
+end
 
-gem "rspec", "~> 3.0"
+group :test do
+  gem "rspec"
+end
 
-gem "debug"
+group :ci do
+  gem "brakeman"
+  gem "pronto"
+  gem "pronto-rubocop", require: false
+end

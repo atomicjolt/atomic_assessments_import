@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "atomic_assessments_import"
+
+file = ARGV[0]
+export_path = ARGV[1]
+if file.nil? || export_path.nil?
+  puts "Usage: convert.rb <file> <export_path>"
+  exit 1
+end
+
+res = AtomicAssessmentsImport.convert(file)
+AtomicAssessmentsImport::Export.create(export_path, res)
+

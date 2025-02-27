@@ -1,6 +1,6 @@
 # Atomic Assessments Import
 
-Import converters for atomic assessments.  Currently only CSV multiple source format is supported by this GEM. 
+Import converters for atomic assessments.  Currently only CSV multiple choice format is supported by this GEM. 
 
 For QTI conversion, see:
 

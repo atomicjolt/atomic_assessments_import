@@ -1,103 +1,71 @@
-# AtomicAssessmentsImports
+# Atomic Assessments Import
 
-Import converters for atomic assessments
+Import converters for atomic assessments.  Currently only CSV multiple source format is supported by this GEM. 
+
+For QTI conversion, see:
+
+https://github.com/atomicjolt/qti_to_learnosity_converter
+
 
 ## Installation
 
-Install the gem and add to the application's Gemfile by executing:
+To install for standalone use:
 
-    $ bundle add atomic_assessments_imports
+    $ bundle install
+
+To use in another ruby application, install the gem and add to the application's Gemfile by executing:
+
+    $ bundle add atomic_assessments_import
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install atomic_assessments_imports
+    $ gem install atomic_assessments_import
 
-## Conversion scripts
+## Standalone conversion scripts
 
 Convert a CSV to a learnosity archive:
 
     $ bin/convert input.csv output.zip
 
-Convert a CSV to json:
+Convert a CSV to json on standard out:
 
     $ bin/convert_to_json input.csv
 
 ## CSV input format
 
-CSV Columns:
+All columns are optional execpt "Option A", "Option B", and "Correct Answer".
 
-### Question ID
-  External question id.  Importing the same question ID twice will overwrite previous imports
-### Title
-  Item title
-### Tag: tag_type
-  Entries in this column represent tag names in type "tag_type".  This column can be repeated any number of times with multiple tag types.
-### Question Text
-  Question stem
-### Question Type
-  Question type. One of:
-  - Multiple choice (default)
-### Template
-  Question type template.  One of:
-  - Standard (default)
-  - Block layout
-  - Multiple response
-  - Block layout multiple response
-  - Choice matrix
-  - Choice matrix inline
-  - Choice matrix labels
-  "Standard" and "Block layout" are single response question types.  The other templates are multiple response.
-### Correct Answer
-  Correct response option, e.g. "A"
-  For multiple response questions, use a semicolon separator.  e.g. "A;C;D"
-### Option A
-  Text for option A
-### Option B
-  Text for option B
-### Option C through Option O
-  Text for subsequent options
-### Option A Feedback
-  Feedback for option A
-### Option B Feedback
-  Feedback for option B
-### Option C Feedback through Option O Feedback
-  Feedback for subsequent options
-### Scoring Type
-  Learnosity scoring type.  One of:
-  - Partial Match Per Response (default)
-  - Partial Match
-  - Exact Match
-### Shuffle options
-  Whether to shuffle answers. One of:
-  - Yes
-  - No (default)
-### Points
-  Question points (default 1)
-### General Feedback
-  General feedback
-### Correct Feedback
-  Correct feedback
-### Partially Correct Feedback
-  Partially correct feedback
-### Incorrect Feedback
-  Incorrect feedback
-### Distractor Rationale
-  Distractor rationale feedback
-### Stimulus review
-  Stimulus (review only)
-### Acknowledgements
-  Acknowledgements
-### Instructor stimulus
-  Instructor stimulus
-### Sample Answer
-  Sample answer
-### Description
-  Item description
-### Alignment URL
-  URL used to generate standard alignment tags. This column can be repeated.
-
-
-
+| Column Name                   | Description |
+|--------------------------------|-------------|
+| Question ID               | External question id. Importing the same question ID twice into a course will overwrite previous imports. Omit this to generate a random id |
+| Title                     | Item title |
+| Question Text             | Question stem |
+| Question Type             | Currently only supports "Multiple choice" |
+| Template                  | Question type template. One of: <br />- Standard <br />- Block layout <br />- Multiple response <br />- Block layout multiple response <br />- Choice matrix <br />- Choice matrix inline <br />- Choice matrix labels <br />"Standard" and "Block layout" are single response question types. The other templates are multiple response. The default is "Standard" |
+| Correct Answer            | Correct response option, e.g., "A". <br />For multiple response questions, use a semicolon separator, e.g., "A;C;D" |
+| Points                    | Question points, defaults to 1 |
+| Option A                  | Text for option A |
+| Option B                  | Text for option B |
+| Option C                  | Text for option C |
+| Option [D-O]              | Text for subsequent options |
+| Option A Feedback         | Feedback for option A |
+| Option B Feedback         | Feedback for option B |
+| Option C Feedback         | Feedback for option C |
+| Option [D-O] Feedback     | Feedback for subsequent options |
+| Scoring Type              | Learnosity scoring type. One of: <br />- Partial Match Per Response <br />- Partial Match <br />- Exact Match <br />The default is "Partial Match Per Response" |
+| Shuffle options           | Whether to shuffle answers. One of: <br />- Yes <br />- No <br />Default is "No" |
+| General Feedback          | General feedback |
+| Correct Feedback          | Correct feedback |
+| Partially Correct Feedback| Partially correct feedback |
+| Incorrect Feedback        | Incorrect feedback |
+| Distractor Rationale      | Distractor rationale feedback |
+| Stimulus review           | Stimulus (review only) |
+| Acknowledgements          | Acknowledgements |
+| Instructor stimulus       | Instructor stimulus |
+| Sample Answer             | Sample answer |
+| Description               | Item description |
+| Tag: tag_type             | Entries in this column represent tag names in type "tag_type". This column can be repeated any number of times with the same or multiple tag types |
+| Alignment URL             | URL used to generate standard alignment tags. This column can be repeated |
 
 ## Development
 
@@ -107,4 +75,4 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/atomicjolt/atomic_assessments_imports.
+Bug reports and pull requests are welcome on GitHub at https://github.com/atomicjolt/atomic_assessments_import.

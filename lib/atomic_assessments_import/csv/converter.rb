@@ -117,8 +117,10 @@ module AtomicAssessmentsImport
           tags: tags(row),
           metadata: {
             import_date: Time.now.iso8601,
+            import_type: "csv",
             **{
-              question_id: row["question id"],
+              external_id: row["question id"],
+              external_id_domain: row["question id"].present? ? "csv" : nil,
               alignment: alignment_urls(row),
             }.compact,
           },

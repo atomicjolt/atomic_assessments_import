@@ -101,6 +101,19 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       )
     end
 
+    it "sets external id metadata" do
+      csv = <<~CSV
+        Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer
+        Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A
+      CSV
+      data = described_class.new(StringIO.new(csv)).convert
+      item1 = data[:items].find { |i| i[:title] == "Question 1" }
+      expect(item1).not_to be_nil
+      expect(item1[:metadata][:external_id]).to eq("Q001")
+      expect(item1[:metadata][:external_id_domain]).to eq("csv")
+      expect(item1[:metadata][:import_type]).to eq("csv")
+    end
+
     it "sets alignment tags" do
       csv = <<~CSV
         Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer,Alignment URL

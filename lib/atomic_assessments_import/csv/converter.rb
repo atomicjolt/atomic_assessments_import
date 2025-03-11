@@ -109,9 +109,9 @@ module AtomicAssessmentsImport
       end
 
       def convert_row(row)
-        source = "CSV Import on #{Time.now.strftime('%Y-%m-%d')}\n"
+        source = "<p>CSV Import on #{Time.now.strftime('%Y-%m-%d')}</p>\n"
         if row["question id"].present?
-          source = source + "\nExternal id: #{row["question id"]}\n"
+          source += "<p>External id: #{row['question id']}</p>\n"
         end
 
         question = Questions::Question.load(row)

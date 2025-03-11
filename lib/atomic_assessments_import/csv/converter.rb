@@ -109,6 +109,11 @@ module AtomicAssessmentsImport
       end
 
       def convert_row(row)
+        source = "CSV Import on #{Time.now.strftime('%Y-%m-%d')}\n"
+        if row["question id"].present?
+          source = source + "\nExternal id: #{row["question id"]}\n"
+        end
+
         question = Questions::Question.load(row)
         item = {
           reference: SecureRandom.uuid,
@@ -124,6 +129,7 @@ module AtomicAssessmentsImport
               alignment: alignment_urls(row),
             }.compact,
           },
+          source: source,
           description: row["description"] || "",
           questions: [
             {

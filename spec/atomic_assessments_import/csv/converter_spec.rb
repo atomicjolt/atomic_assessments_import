@@ -68,6 +68,7 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       expect(item1).not_to be_nil
       expect(item1[:description]).to eq("This is a question about France")
       expect(item1[:title]).to eq("Question 1")
+      expect(item1[:source]).to match(/CSV Import/)
     end
 
     it "sets tags" do
@@ -112,6 +113,7 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       expect(item1[:metadata][:external_id]).to eq("Q001")
       expect(item1[:metadata][:external_id_domain]).to eq("csv")
       expect(item1[:metadata][:import_type]).to eq("csv")
+      expect(item1[:source]).to match(/External.*Q001/)
     end
 
     it "sets alignment tags" do

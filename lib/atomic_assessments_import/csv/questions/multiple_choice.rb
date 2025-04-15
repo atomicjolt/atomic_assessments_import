@@ -92,7 +92,7 @@ module AtomicAssessmentsImport
             { horizontal_lines: false, type: "inline" }
           when "choice matrix labels"
             { stem_numeration: "upper-alpha", horizontal_lines: false, type: "table" }
-          when nil, "", "multiple choice"
+          when nil, "", "multiple choice", "standard"
             { type: "horizontal" }
           else
             raise NotImplementedError, "Unknown template"

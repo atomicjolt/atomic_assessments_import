@@ -288,5 +288,19 @@ RSpec.describe AtomicAssessmentsImport::CSV::Questions::MultipleChoice do
         expect(question.to_learnosity[:data][:ui_style][:stem_numeration]).to eq("upper-alpha")
       end
     end
+
+    context "when standard template" do
+      let(:template) { "Standard" }
+
+      it "sets the multiple responses" do
+        question = described_class.new(row)
+        expect(question.to_learnosity[:data][:multiple_responses]).to be_falsey
+      end
+
+      it "sets the ui style" do
+        question = described_class.new(row)
+        expect(question.to_learnosity[:data][:ui_style][:type]).to eq("horizontal")
+      end
+    end
   end
 end

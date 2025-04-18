@@ -174,7 +174,7 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       CSV
       expect do
         described_class.new(StringIO.new(csv)).convert
-      end.to raise_error(ArgumentError, "Unknown column: Color")
+      end.to raise_error(StandardError, "Unknown column: Color")
     end
 
     it "raises if no options are given" do
@@ -184,7 +184,7 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       CSV
       expect do
         described_class.new(StringIO.new(csv)).convert
-      end.to raise_error(ArgumentError, /Missing options/)
+      end.to raise_error(StandardError, /Missing options/)
     end
 
     it "raises if no correct answer is given" do
@@ -194,7 +194,7 @@ RSpec.describe AtomicAssessmentsImport::CSV::Converter do
       CSV
       expect do
         described_class.new(StringIO.new(csv)).convert
-      end.to raise_error(ArgumentError, /Missing correct answer/)
+      end.to raise_error(StandardError, /Missing correct answer/)
     end
   end
 end

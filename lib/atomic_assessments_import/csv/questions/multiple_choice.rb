@@ -13,8 +13,8 @@ module AtomicAssessmentsImport
         end
 
         def question_data
-          raise ArgumentError, "Missing correct answer" if correct_responses.empty?
-          raise ArgumentError, "Missing options" if options.empty?
+          raise "Missing correct answer" if correct_responses.empty?
+          raise "Missing options" if options.empty?
 
           super.deep_merge(
             {
@@ -95,7 +95,7 @@ module AtomicAssessmentsImport
           when nil, "", "multiple choice", "standard"
             { type: "horizontal" }
           else
-            raise NotImplementedError, "Unknown template"
+            raise "Unknown template: #{@row["template"]}"
           end
         end
       end

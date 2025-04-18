@@ -18,7 +18,7 @@ module AtomicAssessmentsImport
       when "text/csv"
         CSV::Converter.new(path)
       else
-        raise ArgumentError, "Unsupported file type"
+        raise "Unsupported file type"
       end
 
     converter.convert

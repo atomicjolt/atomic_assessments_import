@@ -56,19 +56,19 @@ module AtomicAssessmentsImport
                 normalized.downcase
               end
             if !HEADERS.find { |h| h.is_a?(Regexp) ? h =~ normalized : h == normalized }
-              raise ArgumentError, "Unknown column: #{header}"
+              raise "Unknown column: #{header}"
             end
 
             normalized
           end,
           converters: ->(data) { data&.strip }
-        ) do |row|
+        ).with_index(2) do |row, line|
           item, question_widgets = convert_row(row)
 
           items << item
           questions += question_widgets
         rescue StandardError => e
-          raise e, "Error processing row: #{row.inspect} - #{e.message}"
+          raise e, "Error processing line #{line}: #{e.message}"
         end
 
         {

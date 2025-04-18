@@ -15,7 +15,7 @@ module AtomicAssessmentsImport
           when nil, "", /multiple choice/i, /mcq/i
             MultipleChoice.new(row)
           else
-            raise NotImplementedError, "Unknown question type"
+            raise "Unknown question type #{row['question type']}"
           end
         end
 
@@ -58,7 +58,7 @@ module AtomicAssessmentsImport
           when /Exact Match/i
             "exactMatch"
           else
-            raise NotImplementedError, "Unknown scoring type"
+            raise "Unknown scoring type #{@row['scoring type']}"
           end
         end
 

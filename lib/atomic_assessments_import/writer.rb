@@ -9,7 +9,7 @@ module AtomicAssessmentsImport
     end
 
     def open
-      @zip = Zip::File.open(@path, Zip::File::CREATE)
+      @zip = Zip::File.open(@path, create: true)
       yield self
     ensure
       @zip.close

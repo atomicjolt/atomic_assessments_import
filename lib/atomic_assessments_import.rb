@@ -2,6 +2,7 @@
 
 require "active_support/all"
 require "mimemagic"
+require "tempfile"
 require_relative "atomic_assessments_import/version"
 require_relative "atomic_assessments_import/csv"
 require_relative "atomic_assessments_import/writer"

@@ -1,11 +1,11 @@
 PATH
   remote: .
   specs:
-    atomic_assessments_import (0.2.4)
+    atomic_assessments_import (0.3.0)
       activesupport
       csv
       mimemagic
-      rubyzip
+      rubyzip (~> 3.0)
 
 GEM
   remote: https://rubygems.org/
@@ -91,7 +91,7 @@ GEM
       lint_roller (~> 1.1)
       rubocop (~> 1.72, >= 1.72.1)
     ruby-progressbar (1.13.0)
-    rubyzip (2.4.1)
+    rubyzip (3.2.1)
     securerandom (0.4.1)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)

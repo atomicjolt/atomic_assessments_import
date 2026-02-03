@@ -3,7 +3,7 @@
 require_relative "question"
 
 module AtomicAssessmentsImport
-  module CSV
+  # module CSV
     module Questions
       class MultipleChoice < Question
         QUESTION_INDEXES = ("a".."o").to_a.freeze
@@ -100,5 +100,5 @@ module AtomicAssessmentsImport
         end
       end
     end
-  end
+  # end
 end

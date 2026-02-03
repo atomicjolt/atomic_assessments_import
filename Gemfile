@@ -10,6 +10,7 @@ group :development do
   gem "rubocop"
   gem "rubocop-performance"
   gem "rubocop-rspec"
+  gem 'pandoc-ruby'
 end
 
 group :test do

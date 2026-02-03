@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require "csv"
 require "active_support/core_ext/digest/uuid"
 
 require_relative "questions/question"
 require_relative "questions/multiple_choice"
 
 module AtomicAssessmentsImport
-  module CSV
+  # module CSV
     module Utils
       def self.parse_boolean(value, default:)
         case value&.downcase
@@ -20,5 +19,5 @@ module AtomicAssessmentsImport
         end
       end
     end
-  end
+  # end
 end

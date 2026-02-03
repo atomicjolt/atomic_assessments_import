@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module AtomicAssessmentsImport
-  module CSV
+  # module CSV
     module Questions
       class Question
         def initialize(row)
@@ -12,7 +12,7 @@ module AtomicAssessmentsImport
 
         def self.load(row)
           case row["question type"]
-          when nil, "", /multiple choice/i, /mcq/i
+          when nil, "", /multiple choice/i, /mcq/i, /ma/i # TODO - verify ma is fine here
             MultipleChoice.new(row)
           else
             raise "Unknown question type #{row['question type']}"
@@ -82,5 +82,5 @@ module AtomicAssessmentsImport
         end
       end
     end
-  end
+  # end
 end

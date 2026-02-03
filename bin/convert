@@ -6,11 +6,12 @@ require "atomic_assessments_import"
 
 file = ARGV[0]
 export_path = ARGV[1]
+import_from = ARGV[2]
 if file.nil? || export_path.nil?
   puts "Usage: convert.rb <file> <export_path>"
   exit 1
 end
 
-res = AtomicAssessmentsImport.convert(file)
+res = AtomicAssessmentsImport.convert(file, import_from)
 AtomicAssessmentsImport::Export.create(export_path, res)
 

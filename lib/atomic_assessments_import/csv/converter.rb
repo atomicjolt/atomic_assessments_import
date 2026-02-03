@@ -3,9 +3,9 @@
 require "csv"
 require "active_support/core_ext/digest/uuid"
 
-require_relative "questions/question"
-require_relative "questions/multiple_choice"
-require_relative "utils"
+require_relative "../questions/question"
+require_relative "../questions/multiple_choice"
+require_relative "../utils"
 
 module AtomicAssessmentsImport
   module CSV

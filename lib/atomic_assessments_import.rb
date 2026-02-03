@@ -26,11 +26,16 @@ module AtomicAssessmentsImport
     converter_class.new(path).convert
   end
 
-  # Register converters
+  # Register converters: format is register_converter(mime_type, source, class)
+  # csv - source nil because it was the original/default
   register_converter("text/csv", nil, CSV::Converter)
+  # rtf
   register_converter("application/rtf", "examsoft", ExamSoft::Converter)
+  # docx
   register_converter("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "examsoft", ExamSoft::Converter)
-  register_converter("text/html", "examsoft", ExamSoft::Converter) # Todo: check if this works correctly
+  # html
+  register_converter("text/html", "examsoft", ExamSoft::Converter) 
+  register_converter("application/xhtml+xml", "examsoft", ExamSoft::Converter)
 
   def self.convert_to_aa_format(input_path, output_path)
     result = convert(input_path)

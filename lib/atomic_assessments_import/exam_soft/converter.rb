@@ -26,7 +26,7 @@ module AtomicAssessmentsImport
         questions = []
 
 
-        # 1. Chunking Regex (The "Slicer")
+        # Chunking Regex (The "Slicer") for ExamSoft format - splits at each question block
         chunk_pattern = /<p>(?:Type:.*?)?Folder:.*?(?=<p>(?:Type:.*?)?Folder:|\z)/m
 
         # 2. Field Extraction Regexes
@@ -37,24 +37,18 @@ module AtomicAssessmentsImport
 
         parsed_questions = []
 
-        # Logic: Chunk the text first
         chunks = html.scan(chunk_pattern)
-
         chunks.each do |chunk|
-          # Clean up internal whitespace for metadata/text matching
           clean_chunk = chunk.gsub(/\n/, " ").gsub(/\s+/, " ")
 
           meta   = clean_chunk.match(meta_regex)
           q_text = clean_chunk.match(question_regex)
           expl   = clean_chunk.match(explanation_regex)
-          
-          # Scrape options from the original chunk to preserve HTML structure
           raw_options = chunk.scan(options_regex)
           
-          # Identify ALL indices where the marker is '*'
+          # Identify ALL indices where the marker is '*' to denote correct answers
           # We use .map { |i| i + 1 } to convert 0-index to 1-index numbers
           correct_indices = raw_options.each_index.select { |i| raw_options[i][0] == "*" }.map { |i| i + 1 }
-
 
           type =        meta && meta[:type] ? meta[:type].strip.downcase : "mcq"
           folder =      meta ? meta[:folder].strip : nil
@@ -64,7 +58,6 @@ module AtomicAssessmentsImport
           explanation = expl ? expl[:explanation].strip : nil
           answer_options =     raw_options.map { |opt| opt[2].strip }
           correct_answer_indices = correct_indices 
-          
 
           # Note: a lot of these are nil because ExamSoft RTF doesn't have all the same fields as CSV.
           # They're listed here to show what is being mapped where possible.
@@ -96,10 +89,7 @@ module AtomicAssessmentsImport
           answer_options.each_with_index do |option_text, index|
             option_letter = ("a".ord + index).chr
             row_mock["option #{option_letter}"] = option_text
-          end
-
-
-        
+          end        
 
           item, question_widgets = convert_row(row_mock)
 
@@ -109,28 +99,6 @@ module AtomicAssessmentsImport
           raise e, "Error processing title \"#{title}\": #{e.message}"
         end
 
-
-
-          # items << item
-
-          # question_widgets = {
-          #   type: question.question_type,
-          #   widget_type: "response",
-          #   reference: question.reference,
-          #   data: {
-          #     stimulus: question,
-          #     type: question.question_type,
-          #     metadata: metadata,
-          #     **{ # TODO finish this part
-          #       stimulus_review: nil,#@chunk["stimulus review"],
-          #       instructor_stimulus: nil#@chunk["instructor stimulus"],
-          #     }.compact,
-          #   }, #question_data,
-          # }
-          # questions << question_widgets
-
-
-        # We should match what we return from the CSV converter
         {
           activities: [],
           items:,
@@ -146,7 +114,7 @@ module AtomicAssessmentsImport
         tags = {}
         categories.each do |cat|
           if cat.include?("/")
-            key, value = cat.split("/", 2).map(&:strip) # TODO: deal with multiple slashes? - It could be Tag name/Tag Value/Tag Value2
+            key, value = cat.split("/", 2).map(&:strip) # TODO: deal with multiple slashes? - It could be Tag name/Value/Value2/...  Right now it just splits at the first slash and treats the rest as the value.
             tags[key.to_sym] ||= []
             tags[key.to_sym] << value
           else
@@ -162,7 +130,7 @@ module AtomicAssessmentsImport
         if row["question id"].present?
           source += "<p>External id: #{row['question id']}</p>\n"
         elsif row["folder"].present?
-          source += "<p>From Folder: #{row['folder']}</p>\n" # Is folder a good substitute?
+          source += "<p>From Folder: #{row['folder']}</p>\n" # Is folder a good substitute if there's no question id?
         end
 
 
@@ -175,10 +143,10 @@ module AtomicAssessmentsImport
           metadata: {
             import_date: Time.now.iso8601,
             import_type: row["import_type"] || "examsoft",
-            **{
+            **{ # TODO: decide about this section - what is the external id domain? Do we need alignment URLs from ExamSoft RTF?
               external_id: row["question id"],
-              external_id_domain: row["question id"].present? ? "examsoft" : nil, # IDK about this one
-              alignment: nil # alignment_urls(row), # No alignment URLs in ExamSoft RTF?
+              external_id_domain: row["question id"].present? ? "examsoft" : nil, 
+              alignment: nil # alignment_urls(row)
             }.compact,
           },
           source: source,

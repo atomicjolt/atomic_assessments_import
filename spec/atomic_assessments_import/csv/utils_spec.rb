@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe AtomicAssessmentsImport::CSV::Utils do
+RSpec.describe AtomicAssessmentsImport::Utils do
   describe "#parse_boolean" do
     it "returns true for yes" do
       expect(described_class.parse_boolean("yes", default: false)).to be_truthy

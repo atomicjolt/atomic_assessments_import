@@ -29,7 +29,7 @@ RSpec.describe AtomicAssessmentsImport do
   describe "#convert" do
     it "converts a CSV file to an object" do
       input_path = "spec/fixtures/simple.csv"
-      data = described_class.convert(input_path)
+      data = described_class.convert(input_path, "csv")
 
       expect(data[:errors]).to be_empty
       expect(data[:items].length).to eq(3)

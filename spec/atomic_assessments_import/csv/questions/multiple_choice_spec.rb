@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe AtomicAssessmentsImport::CSV::Questions::MultipleChoice do
+RSpec.describe AtomicAssessmentsImport::Questions::MultipleChoice do
   describe "#to_learnosity" do
     let(:template) { "Multiple choice" }
     let(:correct_answer) { "A" }

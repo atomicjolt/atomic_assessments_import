@@ -125,12 +125,10 @@ module AtomicAssessmentsImport
       end
 
       def convert_row(row)
-        # The csv files had a column for question id, but ExamSoft rtf files does not seem to have that. I'll include Folder instead
+        # The csv files had a column for question id, but ExamSoft rtf files does not seem to have that.
         source = "<p>ExamSoft Import on #{Time.now.strftime('%Y-%m-%d')}</p>\n"
         if row["question id"].present?
           source += "<p>External id: #{row['question id']}</p>\n"
-        elsif row["folder"].present?
-          source += "<p>From Folder: #{row['folder']}</p>\n" # Is folder a good substitute if there's no question id?
         end
 
 
@@ -143,11 +141,12 @@ module AtomicAssessmentsImport
           metadata: {
             import_date: Time.now.iso8601,
             import_type: row["import_type"] || "examsoft",
-            **{ # TODO: decide about this section - what is the external id domain? Do we need alignment URLs from ExamSoft RTF?
-              external_id: row["question id"],
-              external_id_domain: row["question id"].present? ? "examsoft" : nil, 
-              alignment: nil # alignment_urls(row)
-            }.compact,
+            
+            # **{ # TODO: decide about this section - what is the external id domain? Do we need alignment URLs from ExamSoft RTF?
+            #   external_id: row["question id"],
+            #   external_id_domain: row["question id"].present? ? "examsoft" : nil, 
+            #   alignment: nil # alignment_urls(row)
+            # }.compact,
           },
           source: source,
           description: row["description"] || "",

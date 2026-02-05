@@ -6,12 +6,17 @@ require "atomic_assessments_import"
 
 file = ARGV[0]
 export_path = ARGV[1]
-import_from = ARGV[2]
+converter = ARGV[2]
 if file.nil? || export_path.nil?
-  puts "Usage: convert.rb <file> <export_path>"
+  puts "Usage: bin/convert <file> <export_path> [converter]"
+  puts "  <file>          Path to CSV or RTF file to convert"
+  puts "  <export_path>   Path for output ZIP file"
+  puts "  [converter]     Which converter to use- 'examsoft' for files coming from ExamSoft, 'csv' for standard CSV files. Defaults to csv if not specified."
   exit 1
 end
 
-res = AtomicAssessmentsImport.convert(file, import_from)
+converter ||= "csv"
+
+res = AtomicAssessmentsImport.convert(file, converter)
 AtomicAssessmentsImport::Export.create(export_path, res)
 

@@ -108,7 +108,7 @@ PLATFORMS
 DEPENDENCIES
   atomic_assessments_import!
   byebug
-  pandoc-ruby
+  pandoc-ruby (~> 2.1)
   rspec
   rubocop
   rubocop-performance

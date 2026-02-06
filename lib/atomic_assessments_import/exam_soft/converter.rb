@@ -18,7 +18,15 @@ module AtomicAssessmentsImport
 
       def convert
         # Step 1: Parse the ExamSoft file to HTML using Pandoc to formalize the structure
-        html = PandocRuby.new([@file], from: @file.split('.').last).to_html
+        if @file.is_a?(String)
+          html = PandocRuby.new([@file], from: @file.split('.').last).to_html
+        else          # If @file is not a string, we assume it's a Tempfile or similar object that PandocRuby can read from directly
+          # Just grab the text following the last . to determine the format for Pandoc. This is a bit of a hack but it allows us to handle Tempfile objects that don't have a path method.
+          source_type = @file.path.split('.').last.match(/^[a-zA-Z]+/)[0] # Remove any non-alphanumeric characters to get a clean source type for Pandoc
+          html = PandocRuby.new(@file.read, from: source_type).to_html
+        end
+          
+        # html = PandocRuby.new([@file], from: @file.split('.').last).to_html
 
         # Step 2: Extract questions and convert them into AA format
 
@@ -46,11 +54,14 @@ module AtomicAssessmentsImport
           expl   = clean_chunk.match(explanation_regex)
           raw_options = chunk.scan(options_regex)
           
+          # Validate that we have options
+          raise "Missing options" if raw_options.empty?
+          
           # Identify ALL indices where the marker is '*' to denote correct answers
           # We use .map { |i| i + 1 } to convert 0-index to 1-index numbers
           correct_indices = raw_options.each_index.select { |i| raw_options[i][0] == "*" }.map { |i| i + 1 }
 
-          type =        meta && meta[:type] ? meta[:type].strip.downcase : "mcq"
+          type =        meta && meta[:type] ? meta[:type].strip.downcase : "standard" # This is for the "template" field in AA, but ExamSoft RTF doesn't seem to have a direct equivalent, so we can use the "Type" field if it exists or default to "standard".
           folder =      meta ? meta[:folder].strip : nil
           title =       meta ? meta[:title].strip : nil
           categories =  meta ? meta[:category].split(",").map(&:strip) : []
@@ -69,7 +80,7 @@ module AtomicAssessmentsImport
             "import type" => nil,
             "description" => nil,
             "question text" => question,
-            "question type" => type,
+            "question type" => "mcq", # We are treating all questions as multiple choice for now since that's the only type we have in our fixture. We could potentially add logic to determine question type based on the presence of certain fields or patterns in the question text.
             "stimulus review" => nil,
             "instructor stimulus" => nil,
             "correct answer" => correct_answer_indices.map { |i| ("a".ord + i - 1).chr }.join("; "),
@@ -82,7 +93,7 @@ module AtomicAssessmentsImport
             "correct feedback" => explanation,
             "incorrect feedback" => nil,
             "shuffle options" => nil,
-            "template" => nil,
+            "template" => type,
           }
           
           # Add option keys for the MultipleChoice class

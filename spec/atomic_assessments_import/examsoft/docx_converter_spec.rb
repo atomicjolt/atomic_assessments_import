@@ -5,11 +5,11 @@ require "atomic_assessments_import"
 RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
   describe "#convert" do
     before(:all) do
-      @data = described_class.new("spec/fixtures/simple.rtf").convert
+      @data = described_class.new("spec/fixtures/simple.docx").convert
     end
 
-    it "converts a simple RTF file" do
-      path = "spec/fixtures/simple.rtf"
+    it "converts a simple DOCX file" do
+      path = "spec/fixtures/simple.docx"
       data = described_class.new(path).convert
 
       expect(data[:activities]).to eq([])
@@ -42,13 +42,12 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       expect(question3[:reference]).to eq(item3[:questions][0][:reference])
     end
 
-    it "converts a RTF from a Tempfile" do
-      rtf = Tempfile.new("temp.rtf")
-      original_content = File.read("spec/fixtures/simple.rtf")
-      rtf.write(original_content)
-      rtf.rewind
-
-      data = described_class.new(rtf).convert
+    it "converts a DOCX from a Tempfile" do
+      docx = Tempfile.new("temp.docx")
+      original_content = File.read("spec/fixtures/simple.docx")
+      docx.write(original_content)
+      docx.rewind
+      data = described_class.new(docx).convert
 
 
       expect(data[:activities]).to eq([])
@@ -175,30 +174,25 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     # end
 
     it "raises if no options are given" do
-      modified_rtf_file = Tempfile.new("modified.rtf")
-      # Copy the original RTF content and remove the options
-      original_content = File.read("spec/fixtures/simple.rtf")
-      # Remove lines that look like options (e.g., "a) Paris", "b) Versailles", etc.) while keeping the rest of the content intact. This regex looks for lines that start with a letter followed by a parenthesis and some text, which is the typical format for options in ExamSoft RTF exports.
-      modified_content = original_content.gsub(/[a-o]\)\s*[^\}]*/, "")
-      modified_rtf_file.write(modified_content)
-      modified_rtf_file.rewind
+      no_options = Tempfile.new("temp.docx")
+      # Copy the original DOCX content and remove the options
+      original_content = File.read("spec/fixtures/no_options.docx")
+      no_options.write(original_content)
+      no_options.rewind
 
       expect do
-        described_class.new(modified_rtf_file).convert
+        described_class.new(no_options).convert
       end.to raise_error(StandardError, /Missing options/)
     end
 
     it "raises if no correct answer is given" do
-      modified_rtf_file = Tempfile.new("temp.rtf")
-      # Copy the original RTF content and remove only the asterisks marking correct answers
-      original_content = File.read("spec/fixtures/simple.rtf")
-      # Remove the asterisks (*) that mark correct answers, keeping the options
-      modified_content = original_content.gsub(/\*([a-o]\))/, '\1')
-      modified_rtf_file.write(modified_content)
-      modified_rtf_file.rewind
+      no_correct = Tempfile.new("temp.docx")
+      original_content = File.read("spec/fixtures/no_correct.docx")
+      no_correct.write(original_content)
+      no_correct.rewind
 
       expect do
-        described_class.new(modified_rtf_file).convert
+        described_class.new(no_correct).convert
       end.to raise_error(StandardError, /Missing correct answer/)
     end
   end

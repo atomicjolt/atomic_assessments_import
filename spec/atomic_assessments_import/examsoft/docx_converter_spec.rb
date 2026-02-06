@@ -42,6 +42,27 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       expect(question3[:reference]).to eq(item3[:questions][0][:reference])
     end
 
+    it "correctly structures question data including options and correct answers" do
+      question1 = @data[:questions].find { |q| q[:data][:stimulus] == "What is the capital of France?" }
+      expect(question1).not_to be_nil
+      
+      # Verify basic question structure
+      expect(question1[:data][:type]).to eq("mcq")
+      expect(question1[:data][:stimulus]).to eq("What is the capital of France?")
+      
+      # Verify options are structured correctly
+      expect(question1[:data][:options]).to be_a(Array)
+      expect(question1[:data][:options].length).to be > 0
+      expect(question1[:data][:options][0]).to have_key(:label)
+      expect(question1[:data][:options][0]).to have_key(:value)
+      
+      # Verify correct answer is marked
+      expect(question1[:data][:validation]).to have_key(:valid_response)
+      expect(question1[:data][:validation][:valid_response]).to have_key(:value)
+      expect(question1[:data][:validation][:valid_response][:value]).to be_a(Array)
+      expect(question1[:data][:validation][:valid_response][:value].length).to be > 0
+    end
+
     it "converts a DOCX from a Tempfile" do
       docx = Tempfile.new("temp.docx")
       original_content = File.read("spec/fixtures/simple.docx")

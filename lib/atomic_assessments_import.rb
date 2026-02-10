@@ -42,8 +42,8 @@ module AtomicAssessmentsImport
   register_converter("text/html", "examsoft", ExamSoft::Converter) 
   register_converter("application/xhtml+xml", "examsoft", ExamSoft::Converter)
 
-  def self.convert_to_aa_format(input_path, output_path)
-    result = convert(input_path, "csv")
+  def self.convert_to_aa_format(input_path, output_path, import_from: nil)
+    result = convert(input_path, import_from)
     AtomicAssessmentsImport::Export.create(output_path, result)
     {
       errors: result[:errors],

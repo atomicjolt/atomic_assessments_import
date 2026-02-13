@@ -19,6 +19,12 @@ module AtomicAssessmentsImport
           Essay.new(row)
         when /short_answer/i, /shorttext/i
           ShortAnswer.new(row)
+        when /fill_in_the_blank/i, /cloze/i
+          FillInTheBlank.new(row)
+        when /matching/i, /association/i
+          Matching.new(row)
+        when /ordering/i, /orderlist/i
+          Ordering.new(row)
         else
           raise "Unknown question type #{row['question type']}"
         end
@@ -91,3 +97,6 @@ end
 
 require_relative "essay"
 require_relative "short_answer"
+require_relative "fill_in_the_blank"
+require_relative "matching"
+require_relative "ordering"

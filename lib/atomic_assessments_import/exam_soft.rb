@@ -9,6 +9,9 @@ require_relative "exam_soft/chunker/horizontal_rule_split_strategy"
 require_relative "exam_soft/extractor/question_stem_detector"
 require_relative "exam_soft/extractor/options_detector"
 require_relative "exam_soft/extractor/correct_answer_detector"
+require_relative "exam_soft/extractor/metadata_detector"
+require_relative "exam_soft/extractor/feedback_detector"
+require_relative "exam_soft/extractor/question_type_detector"
 
 module AtomicAssessmentsImport
   module ExamSoft

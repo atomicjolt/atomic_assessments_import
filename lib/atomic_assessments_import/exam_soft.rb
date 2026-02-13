@@ -12,6 +12,7 @@ require_relative "exam_soft/extractor/correct_answer_detector"
 require_relative "exam_soft/extractor/metadata_detector"
 require_relative "exam_soft/extractor/feedback_detector"
 require_relative "exam_soft/extractor/question_type_detector"
+require_relative "exam_soft/extractor"
 
 module AtomicAssessmentsImport
   module ExamSoft

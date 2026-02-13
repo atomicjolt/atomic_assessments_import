@@ -11,8 +11,14 @@ module AtomicAssessmentsImport
 
       def self.load(row)
         case row["question type"]
-        when nil, "", /multiple choice/i, /mcq/i, /ma/i # TODO - verify ma is fine here
+        when nil, "", /multiple choice/i, /mcq/i, /^ma$/i
           MultipleChoice.new(row)
+        when /true_false/i, /true\/false/i
+          MultipleChoice.new(row)
+        when /essay/i, /longanswer/i
+          Essay.new(row)
+        when /short_answer/i, /shorttext/i
+          ShortAnswer.new(row)
         else
           raise "Unknown question type #{row['question type']}"
         end
@@ -82,3 +88,6 @@ module AtomicAssessmentsImport
     end
   end
 end
+
+require_relative "essay"
+require_relative "short_answer"

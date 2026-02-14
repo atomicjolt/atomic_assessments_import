@@ -16,7 +16,7 @@ module AtomicAssessmentsImport
             text = node.text.strip
             match = text.match(TILDE_PATTERN)
             if match
-              feedback = match[1].strip
+              feedback = match[1].gsub(/\s+/, " ").strip
               return feedback unless feedback.empty?
             end
           end
@@ -24,7 +24,9 @@ module AtomicAssessmentsImport
           @nodes.each do |node|
             text = node.text.strip
             match = text.match(LABEL_PATTERN)
-            return match[1].strip if match
+            if match
+              return match[1].gsub(/\s+/, " ").strip
+            end
           end
 
           nil

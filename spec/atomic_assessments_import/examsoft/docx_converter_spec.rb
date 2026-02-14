@@ -194,27 +194,24 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     #   end.to raise_error(StandardError, "Unknown column: Color")
     # end
 
-    it "raises if no options are given" do
+    it "warns if no options are given" do
       no_options = Tempfile.new("temp.docx")
-      # Copy the original DOCX content and remove the options
       original_content = File.read("spec/fixtures/no_options.docx")
       no_options.write(original_content)
       no_options.rewind
 
-      expect do
-        described_class.new(no_options).convert
-      end.to raise_error(StandardError, /Missing options/)
+      data = described_class.new(no_options).convert
+      expect(data[:errors]).to include(a_string_matching(/no options|missing options/i))
     end
 
-    it "raises if no correct answer is given" do
+    it "warns if no correct answer is given" do
       no_correct = Tempfile.new("temp.docx")
       original_content = File.read("spec/fixtures/no_correct.docx")
       no_correct.write(original_content)
       no_correct.rewind
 
-      expect do
-        described_class.new(no_correct).convert
-      end.to raise_error(StandardError, /Missing correct answer/)
+      data = described_class.new(no_correct).convert
+      expect(data[:errors]).to include(a_string_matching(/correct answer/i))
     end
   end
 end

@@ -195,32 +195,26 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     #   end.to raise_error(StandardError, "Unknown column: Color")
     # end
 
-    it "raises if no options are given" do
+    it "warns if no options are given" do
       modified_rtf_file = Tempfile.new("modified.rtf")
-      # Copy the original RTF content and remove the options
       original_content = File.read("spec/fixtures/simple.rtf")
-      # Remove lines that look like options (e.g., "a) Paris", "b) Versailles", etc.) while keeping the rest of the content intact. This regex looks for lines that start with a letter followed by a parenthesis and some text, which is the typical format for options in ExamSoft RTF exports.
       modified_content = original_content.gsub(/[a-oA-O]\)\s*[^\}]*/, "")
       modified_rtf_file.write(modified_content)
       modified_rtf_file.rewind
 
-      expect do
-        described_class.new(modified_rtf_file).convert
-      end.to raise_error(StandardError, /Missing options/)
+      data = described_class.new(modified_rtf_file).convert
+      expect(data[:errors]).to include(a_string_matching(/no options|missing options/i))
     end
 
-    it "raises if no correct answer is given" do
+    it "warns if no correct answer is given" do
       modified_rtf_file = Tempfile.new("temp.rtf")
-      # Copy the original RTF content and remove only the asterisks marking correct answers
       original_content = File.read("spec/fixtures/simple.rtf")
-      # Remove the asterisks (*) that mark correct answers, keeping the options
       modified_content = original_content.gsub(/\*([a-oA-O]\))/, '\1')
       modified_rtf_file.write(modified_content)
       modified_rtf_file.rewind
 
-      expect do
-        described_class.new(modified_rtf_file).convert
-      end.to raise_error(StandardError, /Missing correct answer/)
+      data = described_class.new(modified_rtf_file).convert
+      expect(data[:errors]).to include(a_string_matching(/correct answer/i))
     end
   end
 end

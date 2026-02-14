@@ -8,7 +8,6 @@ require_relative "atomic_assessments_import/csv"
 require_relative "atomic_assessments_import/writer"
 require_relative "atomic_assessments_import/export"
 require_relative "atomic_assessments_import/exam_soft"
-require_relative "atomic_assessments_import/exam_soft/chunker"
 
 module AtomicAssessmentsImport
   class Error < StandardError; end

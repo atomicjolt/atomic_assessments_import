@@ -94,7 +94,7 @@ module AtomicAssessmentsImport
         when nil, "", "multiple choice", "standard"
           { type: "horizontal" }
         else
-          raise "Unknown template: #{@row["template"]}"
+          raise "Unknown template: #{@row['template']}"
         end
       end
     end

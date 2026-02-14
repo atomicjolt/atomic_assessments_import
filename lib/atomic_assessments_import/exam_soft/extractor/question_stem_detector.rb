@@ -25,12 +25,12 @@ module AtomicAssessmentsImport
 
           # Strip metadata prefixes and numbered prefix together
           # e.g. "Folder: Geo Title: Q1 Category: Test 1) What is the capital?"
-          if text.match?(/\d+[.)]/m)
-            text = text.sub(/\A.*?\d+[.)]\s*/m, "")
-          else
-            # Strip standalone metadata labels if present (Folder:, Title:, Category:, Type:)
-            text = text.sub(/\A\s*(?:(?:Folder|Title|Category|Type):\s*\S+\s*)*/, "")
-          end
+          text = if text.match?(/\d+[.)]/m)
+                   text.sub(/\A.*?\d+[.)]\s*/m, "")
+                 else
+                   # Strip standalone metadata labels if present (Folder:, Title:, Category:, Type:)
+                   text.sub(/\A\s*(?:(?:Folder|Title|Category|Type):\s*\S+\s*)*/, "")
+                 end
 
           # Split on tilde and take the first part (remove explanation)
           text = text.split("~").first

@@ -106,9 +106,7 @@ module AtomicAssessmentsImport
 
       def convert_row(row, status = "published")
         source = "<p>ExamSoft Import on #{Time.now.strftime('%Y-%m-%d')}</p>\n"
-        if row["question id"].present?
-          source += "<p>External id: #{row['question id']}</p>\n"
-        end
+        source += "<p>External id: #{row['question id']}</p>\n" if row["question id"].present?
 
         question = Questions::Question.load(row)
         item = {

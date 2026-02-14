@@ -24,9 +24,7 @@ module AtomicAssessmentsImport
           @nodes.each do |node|
             text = node.text.strip
             match = text.match(LABEL_PATTERN)
-            if match
-              return match[1].gsub(/\s+/, " ").strip
-            end
+            return match[1].gsub(/\s+/, " ").strip if match
           end
 
           nil

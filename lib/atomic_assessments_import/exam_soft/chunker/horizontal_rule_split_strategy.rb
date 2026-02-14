@@ -27,9 +27,7 @@ module AtomicAssessmentsImport
 
           segments << current_segment unless current_segment.empty?
 
-          if segments.length >= 3
-            @header_nodes = segments.shift
-          end
+          @header_nodes = segments.shift if segments.length >= 3
 
           segments.length >= 2 ? segments : []
         end

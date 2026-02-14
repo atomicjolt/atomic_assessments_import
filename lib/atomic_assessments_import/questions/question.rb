@@ -5,7 +5,6 @@ module AtomicAssessmentsImport
     class Question
       def initialize(row)
         @row = row
-        # @question_reference = Digest::UUID.uuid_v5(Digest::UUID::URL_NAMESPACE, "#{@item_url}/question")
         @reference = SecureRandom.uuid
       end
 
@@ -13,7 +12,7 @@ module AtomicAssessmentsImport
         case row["question type"]
         when nil, "", /multiple choice/i, /mcq/i, /^ma$/i
           MultipleChoice.new(row)
-        when /true_false/i, /true\/false/i
+        when /true_false/i, %r{true/false}i
           MultipleChoice.new(row)
         when /essay/i, /longanswer/i
           Essay.new(row)

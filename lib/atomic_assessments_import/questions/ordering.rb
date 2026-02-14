@@ -16,6 +16,7 @@ module AtomicAssessmentsImport
         INDEXES.each do |letter|
           option = @row["option #{letter}"]
           break unless option
+
           items << option
         end
 

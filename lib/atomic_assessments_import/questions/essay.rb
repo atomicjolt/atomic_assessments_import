@@ -12,7 +12,7 @@ module AtomicAssessmentsImport
       def question_data
         data = super
         word_limit = @row["word_limit"]&.to_i
-        data[:max_length] = word_limit if word_limit && word_limit > 0
+        data[:max_length] = word_limit if word_limit&.positive?
         data
       end
     end

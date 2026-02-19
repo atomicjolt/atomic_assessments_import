@@ -4,8 +4,8 @@ module AtomicAssessmentsImport
   module ExamSoft
     module Extractor
       class MetadataDetector
-        FOLDER_PATTERN = /Folder:\s*(.+?)(?=\s*(?:Title:|Category:|\d+[.)]))/i
-        TITLE_PATTERN = /Title:\s*(.+?)(?=\s*(?:Category:|\d+[.)]))/i
+        FOLDER_PATTERN = /Folder:\s*(.+?)(?=\s*(?:Title:|Category:|(?<=\s)\d+[.)]))/i
+        TITLE_PATTERN = /Title:\s*(.+?)(?=\s*(?:Category:|(?<=\s)\d+[.)]))/i
         CATEGORY_PATTERN = /Category:\s*(.+?)(?=\s*\d+[.)]|\z)/i
         TYPE_PATTERN = /Type:\s*(\S+)/i
 
@@ -14,7 +14,7 @@ module AtomicAssessmentsImport
         end
 
         def detect
-          full_text = @nodes.map { |n| n.text.strip }.join(" ")
+          full_text = @nodes.map { |n| n.text.strip }.join(" ").gsub(/\s+/, " ")
           result = {}
 
           type_match = full_text.match(TYPE_PATTERN)

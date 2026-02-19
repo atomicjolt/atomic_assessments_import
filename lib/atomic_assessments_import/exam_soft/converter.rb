@@ -142,7 +142,9 @@ module AtomicAssessmentsImport
         tags = {}
         (categories || []).each do |cat|
           if cat.include?("/")
-            key, value = cat.split("/", 2).map(&:strip)
+            key, _, value = cat.rpartition("/")
+            key = key.strip
+            value = value.strip
             tags[key.to_sym] ||= []
             tags[key.to_sym] << value
           else

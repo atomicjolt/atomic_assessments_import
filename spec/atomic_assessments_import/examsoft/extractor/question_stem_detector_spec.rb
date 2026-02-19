@@ -37,6 +37,17 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor::QuestionStemDetecto
       expect(result).to eq("What is the capital of France?")
     end
 
+    it "strips metadata prefix up to question number, not a number embedded in parentheses like (Q-62)" do
+      nodes = nodes_from(<<~HTML)
+        <p>Type: MA Folder: Geography Title: Last Question (Q-62) Category: Difficulty/Very Hard 62) What is the population of Denver, CO as of 2021?</p>
+        <p>*a) 711,000–713,000</p>
+        <p>b) 713,000–715,000</p>
+        <p>c) 715,000–717,000</p>
+      HTML
+      result = described_class.new(nodes).detect
+      expect(result).to eq("What is the population of Denver, CO as of 2021?")
+    end
+
     it "returns nil when no question text found" do
       nodes = nodes_from("<p>a) Paris</p><p>b) London</p>")
       result = described_class.new(nodes).detect

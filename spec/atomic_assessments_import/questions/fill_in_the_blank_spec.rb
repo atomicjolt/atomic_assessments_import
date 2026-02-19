@@ -35,5 +35,37 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       expect(result[:data][:validation][:valid_response][:value]).to eq(["Paris", "Lyon", "Marseille"])
       expect(result[:data][:validation][:valid_response][:score]).to eq(1)
     end
+
+    it "replaces __n__ blank markers in the stimulus with {{response}}" do
+      row["question text"] = "The color __1__ consists of primary, secondary, and __2__ colors."
+      row["correct answer"] = "wheel; tertiary"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:stimulus]).to eq("The color {{response}} consists of primary, secondary, and {{response}} colors.")
+    end
+
+    it "appends {{response}} to stimulus when question text has no placeholder" do
+      row["question text"] = "Name the active compound."
+      row["correct answer"] = "Salicin"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:stimulus]).to eq("Name the active compound. {{response}}")
+    end
+
+    it "appends one {{response}} per answer when question text has no placeholder and multiple answers" do
+      row["question text"] = "Fill in both capitals."
+      row["correct answer"] = "Paris; Berlin"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:stimulus]).to eq("Fill in both capitals. {{response}} {{response}}")
+    end
+
+    it "leaves stimulus unchanged when it already contains {{response}}" do
+      row["question text"] = "The capital of France is {{response}}."
+      row["correct answer"] = "Paris"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:stimulus]).to eq("The capital of France is {{response}}.")
+    end
   end
 end

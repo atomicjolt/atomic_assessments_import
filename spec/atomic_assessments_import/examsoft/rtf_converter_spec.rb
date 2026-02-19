@@ -120,81 +120,6 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       )
     end
 
-    # it "sets external id metadata" do
-    #   csv = <<~CSV
-    #     Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer
-    #     Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A
-    #   CSV
-    #   data = described_class.new(StringIO.new(csv)).convert
-    #   item1 = data[:items].find { |i| i[:title] == "Question 1" }
-    #   expect(item1).not_to be_nil
-    #   expect(item1[:metadata][:external_id]).to eq("Q001")
-    #   expect(item1[:metadata][:external_id_domain]).to eq("csv")
-    #   expect(item1[:metadata][:import_type]).to eq("csv")
-    #   expect(item1[:source]).to match(/External.*Q001/)
-    # end
-
-    # it "sets alignment tags" do
-    #   csv = <<~CSV
-    #     Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer,Alignment URL
-    #     Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A,"https://example.com/alignment"
-    #   CSV
-    #   data = described_class.new(StringIO.new(csv)).convert
-    #   item1 = data[:items].find { |i| i[:title] == "Question 1" }
-    #   expect(item1).not_to be_nil
-    #   expect(item1[:tags]).to eq(
-    #     {
-    #       Subject: ["Capitals"],
-    #       lrn_aligned: ["ff8a5caa-0f2a-5a53-a128-c8c3e99768a8"],
-    #     }
-    #   )
-    #   expect(item1[:metadata][:alignment]).to eq(%w[https://example.com/alignment])
-    # end
-
-    # it "sets multiple alignment tags" do
-    #   csv = <<~CSV
-    #     Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer,Alignment URL,Alignment URL
-    #     Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A,https://example.com/alignment,https://example.com/alignment2
-    #   CSV
-    #   data = described_class.new(StringIO.new(csv)).convert
-    #   item1 = data[:items].find { |i| i[:title] == "Question 1" }
-    #   expect(item1).not_to be_nil
-    #   expect(item1[:tags]).to eq(
-    #     {
-    #       Subject: ["Capitals"],
-    #       lrn_aligned: %w[ff8a5caa-0f2a-5a53-a128-c8c3e99768a8 f7d26914-3e2b-5c9c-a550-ce9c853f0c09],
-    #     }
-    #   )
-    #   expect(item1[:metadata][:alignment]).to eq(%w[https://example.com/alignment https://example.com/alignment2])
-    # end
-
-    # it "sets alignment tags when one is empty" do
-    #   csv = <<~CSV
-    #     Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer,Alignment URL,Alignment URL
-    #     Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A,,https://example.com/alignment2
-    #   CSV
-    #   data = described_class.new(StringIO.new(csv)).convert
-    #   item1 = data[:items].find { |i| i[:title] == "Question 1" }
-    #   expect(item1).not_to be_nil
-    #   expect(item1[:tags]).to eq(
-    #     {
-    #       Subject: ["Capitals"],
-    #       lrn_aligned: %w[f7d26914-3e2b-5c9c-a550-ce9c853f0c09],
-    #     }
-    #   )
-    #   expect(item1[:metadata][:alignment]).to eq(%w[https://example.com/alignment2])
-    # end
-
-    # it "raises if an unknown header is present" do
-    #   csv = <<~CSV
-    #     Question ID,Title,Tag:Subject,Question Text,Option A, Option B,Option C,Correct Answer,Color
-    #     Q001,Question 1,Capitals,What is the capital of France?,Paris, Versailles,Bordeaux,A,
-    #   CSV
-    #   expect do
-    #     described_class.new(StringIO.new(csv)).convert
-    #   end.to raise_error(StandardError, "Unknown column: Color")
-    # end
-
     it "warns if no options are given" do
       modified_rtf_file = Tempfile.new("modified.rtf")
       original_content = File.read("spec/fixtures/simple.rtf")
@@ -203,7 +128,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       modified_rtf_file.rewind
 
       data = described_class.new(modified_rtf_file).convert
-      expect(data[:errors]).to include(a_string_matching(/no options|missing options/i))
+      expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/no options|missing options/i)))
     end
 
     it "warns if no correct answer is given" do
@@ -214,7 +139,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       modified_rtf_file.rewind
 
       data = described_class.new(modified_rtf_file).convert
-      expect(data[:errors]).to include(a_string_matching(/correct answer/i))
+      expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/correct answer/i)))
     end
   end
 end

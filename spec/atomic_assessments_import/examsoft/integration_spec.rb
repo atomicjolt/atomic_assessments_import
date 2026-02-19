@@ -32,7 +32,7 @@ RSpec.describe "ExamSoft Integration" do
 
     it "reports exam header in warnings" do
       data = AtomicAssessmentsImport::ExamSoft::Converter.new("spec/fixtures/mixed_types.html").convert
-      expect(data[:errors]).to include(a_string_matching(/header/i))
+      expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/header/i)))
     end
   end
 
@@ -46,6 +46,44 @@ RSpec.describe "ExamSoft Integration" do
 
       # Should have warnings about Q2 (no options for what looks like MCQ)
       expect(data[:errors].length).to be > 0
+    end
+  end
+
+  describe "single-paragraph RTF format" do
+    it "handles documents where all content is in one <p> with <br> separators" do
+      data = AtomicAssessmentsImport::ExamSoft::Converter.new("spec/fixtures/single_paragraph_rtf.html").convert
+
+      expect(data[:items].length).to eq(4)
+
+      # Q1: MCQ
+      q1 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Which state starts with the letter U") }
+      expect(q1).not_to be_nil
+      expect(q1[:type]).to eq("mcq")
+
+      # Q2: FITB (Type: F)
+      q2 = data[:questions].find { |q| q[:data][:stimulus]&.include?("largest state in the US") }
+      expect(q2).not_to be_nil
+      expect(q2[:type]).to eq("clozetext")
+
+      # Q3: Essay (Type: E)
+      q3 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Discuss the pros and cons") }
+      expect(q3).not_to be_nil
+      expect(q3[:type]).to eq("longanswer")
+
+      # Q4: MCQ with multiple correct (MA)
+      q4 = data[:questions].find { |q| q[:data][:stimulus]&.include?("southern states") }
+      expect(q4).not_to be_nil
+      expect(q4[:type]).to eq("mcq")
+    end
+
+    it "extracts feedback correctly from single-paragraph format" do
+      data = AtomicAssessmentsImport::ExamSoft::Converter.new("spec/fixtures/single_paragraph_rtf.html").convert
+
+      q1 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Which state starts with the letter U") }
+      expect(q1[:data][:metadata][:general_feedback]).to include("Utah starts with the letter U")
+
+      q2 = data[:questions].find { |q| q[:data][:stimulus]&.include?("largest state in the US") }
+      expect(q2[:data][:metadata][:general_feedback]).to include("Alaska is the largest state")
     end
   end
 

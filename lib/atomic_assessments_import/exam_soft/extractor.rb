@@ -81,6 +81,11 @@ module AtomicAssessmentsImport
           row["option #{letter}"] = opt[:text]
         end
 
+        # For FITB questions, options ARE the answers (no asterisk marking)
+        if question_type == "fill_in_the_blank" && row["correct answer"].blank? && !options.empty?
+          row["correct answer"] = options.map { |opt| opt[:text] }.join("; ")
+        end
+
         {
           row: row,
           status: status,

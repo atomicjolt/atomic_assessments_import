@@ -25,15 +25,20 @@ module AtomicAssessmentsImport
       def convert
         html = normalize_to_html
         doc = Nokogiri::HTML.fragment(html)
+        normalize_html_structure(doc)
 
         # Chunk the document
         chunk_result = Chunker.chunk(doc)
-        all_warnings = chunk_result[:warnings].dup
+        all_warnings = chunk_result[:warnings].map { |w| build_warning(w) }
+
+        if chunk_result[:chunks].length == 1
+          all_warnings << build_warning("Only 1 chunk detected — document may not be in a recognized format")
+        end
 
         # Log header info if present
         unless chunk_result[:header_nodes].empty?
           header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ")
-          all_warnings << "Exam header detected: #{header_text}" unless header_text.empty?
+          all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
         end
 
         items = []
@@ -42,14 +47,16 @@ module AtomicAssessmentsImport
         chunk_result[:chunks].each_with_index do |chunk_nodes, index|
           # Extract fields from this chunk
           extraction = Extractor.extract(chunk_nodes)
-          all_warnings.concat(extraction[:warnings].map { |w| "Question #{index + 1}: #{w}" })
+          extraction[:warnings].each do |w|
+            all_warnings << build_warning("Question #{index + 1}: #{w}", index: index, question_type: extraction[:row]["question type"])
+          end
 
           row = extraction[:row]
           status = extraction[:status]
 
           # Skip completely unparseable chunks
           if row["question text"].nil? && row["option a"].nil?
-            all_warnings << "Question #{index + 1}: Skipped — no usable content found"
+            all_warnings << build_warning("Question #{index + 1}: Skipped — no usable content found", index: index)
             next
           end
 
@@ -59,13 +66,13 @@ module AtomicAssessmentsImport
             questions += question_widgets
           rescue StandardError => e
             title = row["title"] || "Question #{index + 1}"
-            all_warnings << "#{title}: #{e.message}, imported as draft"
+            all_warnings << build_warning("#{title}: #{e.message}, imported as draft", index: index, question_type: row["question type"])
             begin
               item, question_widgets = convert_row_minimal(row)
               items << item
               questions += question_widgets
             rescue StandardError
-              all_warnings << "#{title}: Could not import even minimally, skipped"
+              all_warnings << build_warning("#{title}: Could not import even minimally, skipped", index: index, question_type: row["question type"])
             end
           end
         end
@@ -80,6 +87,47 @@ module AtomicAssessmentsImport
       end
 
       private
+
+      def build_warning(message, index: nil, question_type: nil)
+        {
+          error_type: "warning",
+          question_type: question_type,
+          message: message,
+          qti_item_id: nil,
+          index: index,
+        }
+      end
+
+      def normalize_html_structure(doc)
+        doc.css("p").each do |p_node|
+          br_children = p_node.css("br")
+          next if br_children.empty?
+
+          # Split the <p> at each <br> into separate <p> elements
+          segments = []
+          current_segment = []
+
+          p_node.children.each do |child|
+            if child.name == "br"
+              segments << current_segment unless current_segment.empty?
+              current_segment = []
+            else
+              current_segment << child
+            end
+          end
+          segments << current_segment unless current_segment.empty?
+
+          next if segments.length <= 1
+
+          # Replace original <p> with multiple <p> elements
+          segments.reverse_each do |segment|
+            new_p = Nokogiri::XML::Node.new("p", doc)
+            segment.each { |child| new_p.add_child(child.clone) }
+            p_node.add_next_sibling(new_p)
+          end
+          p_node.remove
+        end
+      end
 
       def normalize_to_html
         if @file.is_a?(String)

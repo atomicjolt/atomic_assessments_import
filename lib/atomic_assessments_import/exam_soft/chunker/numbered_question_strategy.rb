@@ -6,8 +6,10 @@ module AtomicAssessmentsImport
   module ExamSoft
     module Chunker
       class NumberedQuestionStrategy < Strategy
-        # Matches "1)" or "1." or "12)" etc. at start of text, but NOT single letters like "a)" because those are used for options, not question numbering
-        NUMBERED_PATTERN = /\A\s*(\d+)\s*[.)]/
+        # Matches "1)" or "1." or "1" or "12)" etc. at start of text, but NOT single letters like "a)" because those are used for options, not question numbering
+        # We also allow for an optional "Question" prefix, e.g. "Question 1)" or "Question #: 1"
+        # NUMBERED_PATTERN = /\A\s*(\d+)\s*[.)]/
+        NUMBERED_PATTERN = /\A\s*(?:Question\s*[:#]?\s*)?(\d+)\s*[.)]/
 
         def split(doc)
           @header_nodes = []

@@ -56,5 +56,29 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor::QuestionTypeDetecto
       result = described_class.new(nodes, has_options: false).detect
       expect(result).to eq("fill_in_the_blank")
     end
+
+    it "detects fill_in_the_blank from Type: F" do
+      nodes = nodes_from("<p>Type: F Folder: Science 1) Question?</p>")
+      result = described_class.new(nodes, has_options: false).detect
+      expect(result).to eq("fill_in_the_blank")
+    end
+
+    it "detects fill_in_the_blank from Type: FIB" do
+      nodes = nodes_from("<p>Type: FIB Folder: Science 1) Question?</p>")
+      result = described_class.new(nodes, has_options: false).detect
+      expect(result).to eq("fill_in_the_blank")
+    end
+
+    it "detects essay from Type: E" do
+      nodes = nodes_from("<p>Type: E Folder: Writing 1) Question?</p>")
+      result = described_class.new(nodes, has_options: false).detect
+      expect(result).to eq("essay")
+    end
+
+    it "detects short_answer from Type: SA" do
+      nodes = nodes_from("<p>Type: SA Folder: Science 1) Question?</p>")
+      result = described_class.new(nodes, has_options: false).detect
+      expect(result).to eq("short_answer")
+    end
   end
 end

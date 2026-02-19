@@ -87,5 +87,17 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor do
       expect(result[:status]).to eq("draft")
       expect(result[:warnings]).to include(a_string_matching(/unsupported.*hotspot/i))
     end
+
+    it "sets correct answer from options for FITB questions" do
+      nodes = nodes_from(<<~HTML)
+        <p>Type: F Folder: Science Title: Q1 1) Name the active compound.</p>
+        <p>a) Salicin</p>
+      HTML
+      result = described_class.extract(nodes)
+
+      expect(result[:row]["question type"]).to eq("fill_in_the_blank")
+      expect(result[:row]["correct answer"]).to eq("Salicin")
+      expect(result[:status]).to eq("published")
+    end
   end
 end

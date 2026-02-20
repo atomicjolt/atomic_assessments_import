@@ -72,7 +72,7 @@ module AtomicAssessmentsImport
       def multiple_responses
         case @row["template"]&.downcase
         when "multiple response", "block layout multiple response", "choice matrix",
-          "choice matrix inline", "choice matrix labels", "ma"
+          "choice matrix inline", "choice matrix labels"
           true
         else
           false
@@ -81,7 +81,7 @@ module AtomicAssessmentsImport
 
       def ui_style
         case @row["template"]&.downcase
-        when "multiple response", "ma"
+        when "multiple response"
           { type: "horizontal" }
         when "block layout", "block layout multiple response"
           { choice_label: "upper-alpha", type: "block" }

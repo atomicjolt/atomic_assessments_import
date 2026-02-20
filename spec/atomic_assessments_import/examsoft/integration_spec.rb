@@ -61,7 +61,7 @@ RSpec.describe "ExamSoft Integration" do
       expect(q1[:type]).to eq("mcq")
 
       # Q2: FITB (Type: F)
-      q2 = data[:questions].find { |q| q[:data][:stimulus]&.include?("largest state in the US") }
+      q2 = data[:questions].find { |q| q[:data][:template]&.include?("largest state in the US") }
       expect(q2).not_to be_nil
       expect(q2[:type]).to eq("clozetext")
 
@@ -82,7 +82,7 @@ RSpec.describe "ExamSoft Integration" do
       q1 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Which state starts with the letter U") }
       expect(q1[:data][:metadata][:general_feedback]).to include("Utah starts with the letter U")
 
-      q2 = data[:questions].find { |q| q[:data][:stimulus]&.include?("largest state in the US") }
+      q2 = data[:questions].find { |q| q[:data][:template]&.include?("largest state in the US") }
       expect(q2[:data][:metadata][:general_feedback]).to include("Alaska is the largest state")
     end
   end

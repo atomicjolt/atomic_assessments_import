@@ -72,7 +72,7 @@ module AtomicAssessmentsImport
           "correct feedback" => nil,
           "incorrect feedback" => nil,
           "shuffle options" => nil,
-          "template" => nil,
+          "template" => "block layout",
         }
 
         # Add option keys

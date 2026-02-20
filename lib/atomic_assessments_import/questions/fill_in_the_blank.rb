@@ -12,8 +12,8 @@ module AtomicAssessmentsImport
       def question_data
         answers = (@row["correct answer"] || "").split(";").map(&:strip)
         super.merge(
-          stimulus: "Fill in the blank(s):",
-          template: build_stimulus(answers), # Note: ExamSoft doesn't use a template like Learnosity
+          stimulus: "", # Note: ExamSoft doesn't use a template like Learnosity, so we put the full question text in the template and leave the stimulus blank
+          template: build_stimulus(answers), 
           validation: {
             valid_response: {
               score: points,

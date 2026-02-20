@@ -27,7 +27,7 @@ module AtomicAssessmentsImport
           result[:title] = title_match[1].strip if title_match
 
           category_match = full_text.match(CATEGORY_PATTERN)
-          result[:categories] = category_match[1].split(",").map(&:strip) if category_match
+          result[:categories] = category_match[1].split(/(?<!\s),(?!\s)/).map(&:strip) if category_match
 
           result
         end

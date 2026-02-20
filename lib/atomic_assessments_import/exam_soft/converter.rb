@@ -130,26 +130,33 @@ module AtomicAssessmentsImport
       end
 
       def normalize_to_html
+        # Note: Pandoc Ruby takes either a file path or a string of content, but not a File object directly, so we have to handle both cases here
         if @file.is_a?(String)
+          # File path as string
           PandocRuby.new([@file], from: @file.split(".").last).to_html
-        else
+        elsif @file.respond_to?(:path) && @file.respond_to?(:read)
+          # File-like object (File, Tempfile, etc.)
           source_type = @file.path.split(".").last.match(/^[a-zA-Z]+/)[0]
           PandocRuby.new(@file.read, from: source_type).to_html
+        else
+          raise ArgumentError, "Expected a file path (String) or file-like object, got #{@file.class}"
         end
       end
 
       def categories_to_tags(categories)
         tags = {}
         (categories || []).each do |cat|
-          if cat.include?("/")
-            key, _, value = cat.rpartition("/")
-            key = key.strip
-            value = value.strip
-            tags[key.to_sym] ||= []
-            tags[key.to_sym] << value
-          else
-            tags[cat.to_sym] ||= []
-          end
+          parts = cat.to_s.split("/")
+          key = parts.shift&.strip
+          value = parts.join("/").strip
+          next if key.blank? || value.blank?
+
+          key = key.delete(":")[0, 255]
+          value = value[0, 255]
+          next if key.blank? || value.blank?
+
+          tags[key.to_sym] ||= []
+          tags[key.to_sym] |= [value]
         end
         tags
       end
@@ -159,6 +166,13 @@ module AtomicAssessmentsImport
         source += "<p>External id: #{row['question id']}</p>\n" if row["question id"].present?
 
         question = Questions::Question.load(row)
+        # ExamSoft has a dedicated Multiple Answer question type, but Learnosity does not, so we need to update the question type and UI style for those questions
+        question_learnosity = question.to_learnosity
+        if row["question type"] == "ma"
+          question_learnosity[:data][:ui_style] = { choice_label: "upper-alpha", type: "block" }
+          question_learnosity[:data][:multiple_responses] = true
+        end
+
         item = {
           reference: SecureRandom.uuid,
           title: row["title"] || "",
@@ -186,7 +200,7 @@ module AtomicAssessmentsImport
             ],
           },
         }
-        [item, [question.to_learnosity]]
+        [item, [question_learnosity]]
       end
 
       def convert_row_minimal(row)

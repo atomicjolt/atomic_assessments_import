@@ -25,7 +25,7 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       result = question.to_learnosity
       expect(result[:type]).to eq("clozetext")
       expect(result[:widget_type]).to eq("response")
-      expect(result[:data][:stimulus]).to eq("The capital of France is {{response}}.")
+      expect(result[:data][:template]).to eq("The capital of France is {{response}}.")
     end
 
     it "includes validation with correct answers array" do
@@ -41,15 +41,15 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       row["correct answer"] = "wheel; tertiary"
       question = described_class.new(row)
       result = question.to_learnosity
-      expect(result[:data][:stimulus]).to eq("The color {{response}} consists of primary, secondary, and {{response}} colors.")
+      expect(result[:data][:template]).to eq("The color {{response}} consists of primary, secondary, and {{response}} colors.")
     end
 
-    it "appends {{response}} to stimulus when question text has no placeholder" do
+    it "appends {{response}} to template when question text has no placeholder" do
       row["question text"] = "Name the active compound."
       row["correct answer"] = "Salicin"
       question = described_class.new(row)
       result = question.to_learnosity
-      expect(result[:data][:stimulus]).to eq("Name the active compound. {{response}}")
+      expect(result[:data][:template]).to eq("Name the active compound. {{response}}")
     end
 
     it "appends one {{response}} per answer when question text has no placeholder and multiple answers" do
@@ -57,15 +57,15 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       row["correct answer"] = "Paris; Berlin"
       question = described_class.new(row)
       result = question.to_learnosity
-      expect(result[:data][:stimulus]).to eq("Fill in both capitals. {{response}} {{response}}")
+      expect(result[:data][:template]).to eq("Fill in both capitals. {{response}} {{response}}")
     end
 
-    it "leaves stimulus unchanged when it already contains {{response}}" do
+    it "leaves template unchanged when it already contains {{response}}" do
       row["question text"] = "The capital of France is {{response}}."
       row["correct answer"] = "Paris"
       question = described_class.new(row)
       result = question.to_learnosity
-      expect(result[:data][:stimulus]).to eq("The capital of France is {{response}}.")
+      expect(result[:data][:template]).to eq("The capital of France is {{response}}.")
     end
   end
 end

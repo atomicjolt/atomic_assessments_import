@@ -11,7 +11,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor::MetadataDetector do
   describe "#detect" do
     it "extracts folder, title, and category" do
       nodes = nodes_from(<<~HTML)
-        <p>Folder: Geography Title: Question 1 Category: Subject/Capitals, Difficulty/Normal 1) Question?</p>
+        <p>Folder: Geography Title: Question 1 Category: Subject/Capitals,Difficulty/Normal 1) Question?</p>
       HTML
       result = described_class.new(nodes).detect
       expect(result[:folder]).to eq("Geography")

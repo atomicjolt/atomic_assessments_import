@@ -99,5 +99,6 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor do
       expect(result[:row]["correct answer"]).to eq("Salicin")
       expect(result[:status]).to eq("published")
     end
+
   end
 end

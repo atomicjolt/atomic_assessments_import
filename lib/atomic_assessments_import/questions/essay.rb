@@ -6,7 +6,7 @@ module AtomicAssessmentsImport
   module Questions
     class Essay < Question
       def question_type
-        "longanswer"
+        "longtext"
       end
 
       def question_data

@@ -81,8 +81,10 @@ module AtomicAssessmentsImport
           row["option #{letter}"] = opt[:text]
         end
 
-        # For FITB questions, options ARE the answers (no asterisk marking)
-        if question_type == "fill_in_the_blank" && row["correct answer"].blank? && !options.empty?
+        # For FITB questions, options ARE the answers (no asterisk marking).
+        # Skip if options are dropdown choices ("Choice of: ...") — those are handled by ClozeDropdown.
+        if question_type == "fill_in_the_blank" && row["correct answer"].blank? && !options.empty? &&
+            !options.first[:text].to_s.match?(/\AChoice of:/i)
           row["correct answer"] = options.map { |opt| opt[:text] }.join("; ")
         end
 

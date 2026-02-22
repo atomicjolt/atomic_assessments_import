@@ -14,9 +14,9 @@ RSpec.describe AtomicAssessmentsImport::Questions::Essay do
   end
 
   describe "#question_type" do
-    it "returns longanswer" do
+    it "returns longtext" do
       question = described_class.new(row)
-      expect(question.question_type).to eq("longanswer")
+      expect(question.question_type).to eq("longtext")
     end
   end
 
@@ -24,7 +24,7 @@ RSpec.describe AtomicAssessmentsImport::Questions::Essay do
     it "returns correct structure" do
       question = described_class.new(row)
       result = question.to_learnosity
-      expect(result[:type]).to eq("longanswer")
+      expect(result[:type]).to eq("longtext")
       expect(result[:widget_type]).to eq("response")
       expect(result[:data][:stimulus]).to eq("Discuss the causes of World War I.")
     end

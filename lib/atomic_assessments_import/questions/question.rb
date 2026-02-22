@@ -19,7 +19,11 @@ module AtomicAssessmentsImport
         when /short_answer/i, /shorttext/i
           ShortAnswer.new(row)
         when /fill_in_the_blank/i, /cloze/i
-          FillInTheBlank.new(row)
+          if row["option a"]&.match?(/\AChoice of:/i)
+            ClozeDropdown.new(row)
+          else
+            FillInTheBlank.new(row)
+          end
         when /matching/i, /association/i
           Matching.new(row)
         when /ordering/i, /orderlist/i
@@ -97,5 +101,6 @@ end
 require_relative "essay"
 require_relative "short_answer"
 require_relative "fill_in_the_blank"
+require_relative "cloze_dropdown"
 require_relative "matching"
 require_relative "ordering"

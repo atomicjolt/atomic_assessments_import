@@ -28,7 +28,14 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       expect(result[:data][:template]).to eq("The capital of France is {{response}}.")
     end
 
-    it "includes validation with correct answers array" do
+    it "puts scoring_type at top level of validation, not inside valid_response" do
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:validation][:scoring_type]).to eq("partialMatchV2")
+      expect(result[:data][:validation][:valid_response].keys).not_to include(:scoring_type)
+    end
+
+    it "includes each answer as a flat array of strings in valid_response value" do
       row["correct answer"] = "Paris; Lyon; Marseille"
       question = described_class.new(row)
       result = question.to_learnosity

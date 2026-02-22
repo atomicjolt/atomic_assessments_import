@@ -17,7 +17,7 @@ RSpec.describe "ExamSoft Integration" do
       # Essay question
       q2 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Hamlet") }
       expect(q2).not_to be_nil
-      expect(q2[:type]).to eq("longanswer")
+      expect(q2[:type]).to eq("longtext")
 
       # MA question
       q3 = data[:questions].find { |q| q[:data][:stimulus]&.include?("European capitals") }
@@ -68,7 +68,7 @@ RSpec.describe "ExamSoft Integration" do
       # Q3: Essay (Type: E)
       q3 = data[:questions].find { |q| q[:data][:stimulus]&.include?("Discuss the pros and cons") }
       expect(q3).not_to be_nil
-      expect(q3[:type]).to eq("longanswer")
+      expect(q3[:type]).to eq("longtext")
 
       # Q4: MCQ with multiple correct (MA)
       q4 = data[:questions].find { |q| q[:data][:stimulus]&.include?("southern states") }

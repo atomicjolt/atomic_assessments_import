@@ -1,6 +1,14 @@
 # Atomic Assessments Import
 
-Import converters for atomic assessments.  Currently only CSV multiple choice format is supported by this GEM. 
+Import converters for atomic assessments.  Currently this GEM supports the following export and file types:
+* CSV 
+    - Multiple Choice
+* ExamSoft (in RTF, HTML, or DOCX file format)
+    - Multiple Choice
+    - True/False
+    - Fill in the Blank / Cloze
+    - Ordering
+    - Essay
 
 For QTI conversion, see:
 
@@ -21,6 +29,14 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
     $ gem install atomic_assessments_import
 
+## Usage
+```
+Usage: bin/convert <file> <export_path> [converter]
+  <file>          Path to CSV or RTF file to convert
+  <export_path>   Path for output ZIP file
+  [converter]     Which converter to use- 'examsoft' for files coming from ExamSoft, 'csv' for standard CSV files. Defaults to csv if not specified.
+```
+
 ## Standalone conversion scripts
 
 Convert a CSV to a learnosity archive:
@@ -30,6 +46,10 @@ Convert a CSV to a learnosity archive:
 Convert a CSV to json on standard out:
 
     $ bin/convert_to_json input.csv
+
+Convert an ExamSoft RTF to a learnosity archive:
+
+    $ bin/convert input.rtf output.zip examsoft
 
 ## CSV input format
 

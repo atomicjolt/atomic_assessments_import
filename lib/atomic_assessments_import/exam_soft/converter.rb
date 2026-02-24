@@ -61,12 +61,12 @@ module AtomicAssessmentsImport
           end
 
           begin
-            item, question_widgets = convert_row(row, status)
+            item, question_widgets = convert_row(row, "published")
             items << item
             questions += question_widgets
           rescue StandardError => e
             title = row["title"] || "Question #{index + 1}"
-            all_warnings << build_warning("#{title}: #{e.message}, imported as draft", index: index, question_type: row["question type"])
+            all_warnings << build_warning("#{title}: #{e.message}", index: index, question_type: row["question type"]) # TODO: see if we can support drafts: ", imported as draft"
             begin
               item, question_widgets = convert_row_minimal(row)
               if item[:definition][:widgets].empty?

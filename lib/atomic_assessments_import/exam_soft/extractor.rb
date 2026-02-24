@@ -30,22 +30,22 @@ module AtomicAssessmentsImport
         status = "published"
 
         unless SUPPORTED_TYPES.include?(question_type)
-          warnings << "Unsupported question type '#{question_type}', imported as draft"
+          warnings << "Unsupported question type '#{question_type}'"#, imported as draft"
           status = "draft"
         end
 
         if stem.nil?
-          warnings << "No question text found, imported as draft"
+          warnings << "No question text found"#, imported as draft"
           status = "draft"
         end
 
         if OPTION_TYPES.include?(question_type)
           if options.empty?
-            warnings << "No options found for #{question_type} question, imported as draft"
+            warnings << "No options found for #{question_type} question"#, imported as draft"
             status = "draft"
           end
           if correct_answers.empty?
-            warnings << "No correct answer found, imported as draft"
+            warnings << "No correct answer found"#, imported as draft"
             status = "draft"
           end
         end
@@ -81,10 +81,8 @@ module AtomicAssessmentsImport
           row["option #{letter}"] = opt[:text]
         end
 
-        # For FITB questions, options ARE the answers (no asterisk marking).
-        # Skip if options are dropdown choices ("Choice of: ...") — those are handled by ClozeDropdown.
-        if question_type == "fill_in_the_blank" && row["correct answer"].blank? && !options.empty? &&
-            !options.first[:text].to_s.match?(/\AChoice of:/i)
+        # For FITB questions, options ARE the answers (no asterisk marking)
+        if question_type == "fill_in_the_blank" && row["correct answer"].blank? && !options.empty?
           row["correct answer"] = options.map { |opt| opt[:text] }.join("; ")
         end
 

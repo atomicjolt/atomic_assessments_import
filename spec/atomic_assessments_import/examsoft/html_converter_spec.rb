@@ -143,5 +143,20 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       data = described_class.new(modified_file).convert
       expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/correct answer/i)))
     end
+
+    it "does not include items with empty definition.widgets in the output" do
+      modified_file = Tempfile.new("temp.html")
+      original_content = File.read("spec/fixtures/simple.html")
+      # Remove asterisk from correct answers so MCQ raises "Missing correct answer"
+      # and falls back to convert_row_minimal which produces definition: { widgets: [] }
+      modified_content = original_content.gsub(/\*([a-oA-O]\))/, '\1')
+      modified_file.write(modified_content)
+      modified_file.rewind
+
+      data = described_class.new(modified_file).convert
+      # Items with empty definition.widgets cause Learnosity to reject the entire batch
+      items_with_empty_widgets = data[:items].select { |i| i[:definition][:widgets].empty? }
+      expect(items_with_empty_widgets).to be_empty
+    end
   end
 end

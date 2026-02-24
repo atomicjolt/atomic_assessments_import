@@ -69,8 +69,12 @@ module AtomicAssessmentsImport
             all_warnings << build_warning("#{title}: #{e.message}, imported as draft", index: index, question_type: row["question type"])
             begin
               item, question_widgets = convert_row_minimal(row)
-              items << item
-              questions += question_widgets
+              if item[:definition][:widgets].empty?
+                all_warnings << build_warning("#{title}: Could not import even minimally, skipped", index: index, question_type: row["question type"])
+              else
+                items << item
+                questions += question_widgets
+              end
             rescue StandardError
               all_warnings << build_warning("#{title}: Could not import even minimally, skipped", index: index, question_type: row["question type"])
             end

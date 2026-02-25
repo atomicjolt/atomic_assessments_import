@@ -31,7 +31,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor do
       expect(result[:warnings]).to be_empty
     end
 
-    it "returns draft status when no correct answer" do
+    it "returns non-published status when no correct answer" do
       nodes = nodes_from(<<~HTML)
         <p>1) What is the capital of France?</p>
         <p>a) Paris</p>
@@ -39,18 +39,18 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor do
       HTML
       result = described_class.extract(nodes)
 
-      expect(result[:status]).to eq("draft")
+      expect(result[:status]).not_to eq("published")
       expect(result[:warnings]).to include(a_string_matching(/correct answer/i))
     end
 
-    it "returns draft status when no question text found" do
+    it "returns non-published status when no question text found" do
       nodes = nodes_from(<<~HTML)
         <p>a) Paris</p>
         <p>b) London</p>
       HTML
       result = described_class.extract(nodes)
 
-      expect(result[:status]).to eq("draft")
+      expect(result[:status]).not_to eq("published")
       expect(result[:warnings]).to include(a_string_matching(/question text/i))
     end
 
@@ -78,13 +78,13 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Extractor do
       expect(result[:status]).to eq("published")
     end
 
-    it "warns for unsupported question types but still imports" do
+    it "warns and returns non-published status for unsupported question types" do
       nodes = nodes_from(<<~HTML)
         <p>Type: Hotspot 1) Identify the region on the map.</p>
       HTML
       result = described_class.extract(nodes)
 
-      expect(result[:status]).to eq("draft")
+      expect(result[:status]).not_to eq("published")
       expect(result[:warnings]).to include(a_string_matching(/unsupported.*hotspot/i))
     end
 

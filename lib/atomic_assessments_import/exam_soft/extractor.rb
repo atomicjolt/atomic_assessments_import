@@ -30,23 +30,22 @@ module AtomicAssessmentsImport
         status = "published"
 
         unless SUPPORTED_TYPES.include?(question_type)
-          warnings << "Unsupported question type '#{question_type}'"#, imported as draft"
-          status = "draft"
+          warnings << "Unsupported question type '#{question_type}'"
+          status = nil
         end
 
         if stem.nil?
-          warnings << "No question text found"#, imported as draft"
-          status = "draft"
+          warnings << "No question text found"
+          status = nil
         end
 
         if OPTION_TYPES.include?(question_type)
           if options.empty?
-            warnings << "No options found for #{question_type} question"#, imported as draft"
-            status = "draft"
+            warnings << "No options found for #{question_type} question"
           end
           if correct_answers.empty?
-            warnings << "No correct answer found"#, imported as draft"
-            status = "draft"
+            warnings << "No correct answer found"
+            status = nil
           end
         end
 

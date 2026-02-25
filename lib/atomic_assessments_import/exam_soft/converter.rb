@@ -60,24 +60,15 @@ module AtomicAssessmentsImport
             next
           end
 
+          next unless status == "published"
+
           begin
             item, question_widgets = convert_row(row, "published")
             items << item
             questions += question_widgets
           rescue StandardError => e
             title = row["title"] || "Question #{index + 1}"
-            all_warnings << build_warning("#{title}: #{e.message}", index: index, question_type: row["question type"]) # TODO: see if we can support drafts: ", imported as draft"
-            begin
-              item, question_widgets = convert_row_minimal(row)
-              if item[:definition][:widgets].empty?
-                all_warnings << build_warning("#{title}: Could not import even minimally, skipped", index: index, question_type: row["question type"])
-              else
-                items << item
-                questions += question_widgets
-              end
-            rescue StandardError
-              all_warnings << build_warning("#{title}: Could not import even minimally, skipped", index: index, question_type: row["question type"])
-            end
+            all_warnings << build_warning("#{title}: #{e.message}", index: index, question_type: row["question type"])
           end
         end
 
@@ -207,25 +198,6 @@ module AtomicAssessmentsImport
         [item, [question_learnosity]]
       end
 
-      def convert_row_minimal(row)
-        reference = SecureRandom.uuid
-        item = {
-          reference: reference,
-          title: row["title"] || "",
-          status: "draft",
-          tags: {},
-          metadata: {
-            import_date: Time.now.iso8601,
-            import_type: "examsoft",
-          },
-          source: "<p>ExamSoft Import on #{Time.now.strftime('%Y-%m-%d')}</p>\n",
-          description: row["question text"] || "",
-          questions: [],
-          features: [],
-          definition: { widgets: [] },
-        }
-        [item, []]
-      end
     end
   end
 end

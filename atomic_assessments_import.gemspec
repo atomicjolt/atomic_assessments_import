@@ -5,7 +5,7 @@ require_relative "lib/atomic_assessments_import/version"
 Gem::Specification.new do |spec|
   spec.name = "atomic_assessments_import"
   spec.version = AtomicAssessmentsImport::VERSION
-  spec.authors = ["Sean Collings", "Matt Petro"]
+  spec.authors = ["Sean Collings", "Matt Petro", "Jacob Schwartz"]
   spec.email = ["support@atomicjolt.com"]
 
   spec.summary = "Importer to Convert different formats to AA's import format"
@@ -37,4 +37,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "csv"
   spec.add_dependency "mimemagic"
   spec.add_dependency "rubyzip", "~> 3.0"
+  spec.add_dependency "pandoc-ruby", "~> 2.1"
 end

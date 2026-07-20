@@ -14,6 +14,7 @@ require_relative "../questions/ordering"
 require_relative "../utils"
 require_relative "chunker"
 require_relative "extractor"
+require_relative "html_normalizer"
 
 module AtomicAssessmentsImport
   module ExamSoft
@@ -25,7 +26,7 @@ module AtomicAssessmentsImport
       def convert
         html = normalize_to_html
         doc = Nokogiri::HTML.fragment(html)
-        normalize_html_structure(doc)
+        HtmlNormalizer.normalize!(doc)
 
         # Chunk the document
         chunk_result = Chunker.chunk(doc)
@@ -91,37 +92,6 @@ module AtomicAssessmentsImport
           qti_item_id: nil,
           index: index,
         }
-      end
-
-      def normalize_html_structure(doc)
-        doc.css("p").each do |p_node|
-          br_children = p_node.css("br")
-          next if br_children.empty?
-
-          # Split the <p> at each <br> into separate <p> elements
-          segments = []
-          current_segment = []
-
-          p_node.children.each do |child|
-            if child.name == "br"
-              segments << current_segment unless current_segment.empty?
-              current_segment = []
-            else
-              current_segment << child
-            end
-          end
-          segments << current_segment unless current_segment.empty?
-
-          next if segments.length <= 1
-
-          # Replace original <p> with multiple <p> elements
-          segments.reverse_each do |segment|
-            new_p = Nokogiri::XML::Node.new("p", doc)
-            segment.each { |child| new_p.add_child(child.clone) }
-            p_node.add_next_sibling(new_p)
-          end
-          p_node.remove
-        end
       end
 
       def normalize_to_html

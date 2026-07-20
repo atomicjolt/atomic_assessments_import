@@ -35,4 +35,21 @@ RSpec.describe AtomicAssessmentsImport::Questions::ShortAnswer do
       expect(result[:data][:validation][:valid_response][:score]).to eq(1)
     end
   end
+
+  it "emits alt_responses for alternate answers" do
+    q = described_class.new(
+      "question text" => "<p>How many mL?</p>",
+      "correct answer" => "0",
+      "alternate answers" => ["none"],
+      "points" => "20",
+    )
+    data = q.question_data
+    expect(data[:validation][:valid_response]).to eq(score: 20.0, value: "0")
+    expect(data[:validation][:alt_responses]).to eq([{ score: 20.0, value: "none" }])
+  end
+
+  it "omits alt_responses when there are no alternates" do
+    q = described_class.new("question text" => "<p>x</p>", "correct answer" => "45")
+    expect(q.question_data[:validation]).not_to have_key(:alt_responses)
+  end
 end

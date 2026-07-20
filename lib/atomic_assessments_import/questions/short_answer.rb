@@ -10,14 +10,17 @@ module AtomicAssessmentsImport
       end
 
       def question_data
-        super.merge(
-          validation: {
-            valid_response: {
-              score: points,
-              value: @row["correct answer"] || "",
-            },
-          }
-        )
+        validation = {
+          valid_response: {
+            score: points,
+            value: @row["correct answer"] || "",
+          },
+        }
+        alternates = Array(@row["alternate answers"]).reject(&:blank?)
+        if alternates.any?
+          validation[:alt_responses] = alternates.map { |value| { score: points, value: value } }
+        end
+        super.merge(validation: validation)
       end
     end
   end

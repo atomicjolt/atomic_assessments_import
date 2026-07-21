@@ -74,5 +74,33 @@ RSpec.describe AtomicAssessmentsImport::Questions::FillInTheBlank do
       result = question.to_learnosity
       expect(result[:data][:template]).to eq("The capital of France is {{response}}.")
     end
+
+    it "emits alt_responses for a single-blank alternate answer" do
+      row["question text"] = "<p>How many mL?</p>"
+      row["correct answer"] = "0"
+      row["alternate answers"] = ["none"]
+      row["points"] = "20"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:validation][:valid_response]).to eq(score: 20.0, value: ["0"])
+      expect(result[:data][:validation][:alt_responses]).to eq([{ score: 20.0, value: ["none"] }])
+    end
+
+    it "emits alt_responses for a two-blank alternate answer set" do
+      row["question text"] = "How long and when? {{response}} {{response}}"
+      row["correct answer"] = "8 hours 20 minutes; 1420"
+      row["alternate answers"] = ["9 hours;1500"]
+      row["points"] = "20"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:validation][:alt_responses]).to eq([{ score: 20.0, value: ["9 hours", "1500"] }])
+    end
+
+    it "omits alt_responses when there are no alternates" do
+      row["correct answer"] = "Paris"
+      question = described_class.new(row)
+      result = question.to_learnosity
+      expect(result[:data][:validation]).not_to have_key(:alt_responses)
+    end
   end
 end

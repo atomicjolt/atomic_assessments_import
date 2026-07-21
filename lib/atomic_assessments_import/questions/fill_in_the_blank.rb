@@ -11,16 +11,23 @@ module AtomicAssessmentsImport
 
       def question_data
         answers = (@row["correct answer"] || "").split(";").map(&:strip)
+        validation = {
+          scoring_type: scoring_type,
+          valid_response: {
+            score: points,
+            value: answers
+          },
+        }
+        alternates = Array(@row["alternate answers"]).reject(&:blank?)
+        if alternates.any?
+          validation[:alt_responses] = alternates.map do |alternate|
+            { score: points, value: alternate.split(";").map(&:strip) }
+          end
+        end
         super.merge(
           stimulus: "", # Note: ExamSoft doesn't use a template like Learnosity, so we put the full question text in the template and leave the stimulus blank
-          template: build_stimulus(answers), 
-          validation: {
-            scoring_type: scoring_type,
-            valid_response: {
-              score: points,
-              value: answers
-            },
-          }
+          template: build_stimulus(answers),
+          validation: validation
         )
       end
 

@@ -44,12 +44,15 @@ RSpec.describe AtomicAssessmentsImport::Questions::ShortAnswer do
       "points" => "20",
     )
     data = q.question_data
+    expect(data[:validation][:scoring_type]).to eq("exactMatch")
     expect(data[:validation][:valid_response]).to eq(score: 20.0, value: "0")
     expect(data[:validation][:alt_responses]).to eq([{ score: 20.0, value: "none" }])
   end
 
   it "omits alt_responses when there are no alternates" do
     q = described_class.new("question text" => "<p>x</p>", "correct answer" => "45")
-    expect(q.question_data[:validation]).not_to have_key(:alt_responses)
+    data = q.question_data
+    expect(data[:validation][:scoring_type]).to eq("exactMatch")
+    expect(data[:validation]).not_to have_key(:alt_responses)
   end
 end

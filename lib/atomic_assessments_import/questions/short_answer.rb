@@ -11,6 +11,7 @@ module AtomicAssessmentsImport
 
       def question_data
         validation = {
+          scoring_type: "exactMatch",
           valid_response: {
             score: points,
             value: @row["correct answer"] || "",

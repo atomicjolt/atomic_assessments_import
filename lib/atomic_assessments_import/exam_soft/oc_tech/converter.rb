@@ -23,11 +23,13 @@ module AtomicAssessmentsImport
 
         def convert
           path = @file.is_a?(String) ? @file : @file.path
-          if File.extname(path).casecmp(".zip").zero?
-            convert_zip(path)
-          else
-            convert_single(path, filename: File.basename(path))
-          end
+          result =
+            if File.extname(path).casecmp(".zip").zero?
+              convert_zip(path)
+            else
+              convert_single(path, filename: File.basename(path))
+            end
+          finalize_errors(result)
         end
 
         # Convert one exam document to items + one activity. Used directly for
@@ -60,6 +62,17 @@ module AtomicAssessmentsImport
         end
 
         private
+
+        # Assigns each error a sequential, unique 0-based `index` across the
+        # whole outgoing result (file-wide for a single file, zip-wide when
+        # convert_single results have been merged). The Rails app persists
+        # errors via find_or_create_by(qti_item_id:, index:), so without this
+        # every error but the first would collide on the shared nil index and
+        # be silently dropped.
+        def finalize_errors(result)
+          result[:errors].each_with_index { |error, index| error[:index] = index }
+          result
+        end
 
         def convert_zip(zip_path)
           merged = { activities: [], items: [], questions: [], features: [], assets: {}, errors: [] }

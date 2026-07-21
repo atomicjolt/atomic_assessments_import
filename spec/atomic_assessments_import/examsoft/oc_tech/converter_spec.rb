@@ -48,6 +48,26 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
     expect(result[:errors].map { |e| e[:message] }.join).not_to include("declared")
   end
 
+  it "assigns each error a distinct sequential index so none collide on find_or_create_by" do
+    # Build a scenario with 2+ errors via a zip: a good entry (so the zip
+    # doesn't raise), a failing entry, and an unsupported entry, all of which
+    # land in the merged errors array.
+    good = File.join(__dir__, "../../../fixtures/oc_tech/practice_exam.rtf")
+    no_answers = File.join(__dir__, "../../../fixtures/oc_tech/no_answers.rtf")
+    zip_file = Tempfile.new(["oc_tech_indexes", ".zip"])
+    Zip::File.open(zip_file.path, create: true) do |zip|
+      zip.add("good.rtf", good)
+      zip.add("bad.rtf", no_answers)
+      zip.add("notes.txt", good)
+    end
+
+    zip_result = described_class.new(zip_file.path).convert
+    indexes = zip_result[:errors].map { |e| e[:index] }
+    expect(indexes.length).to be >= 2
+    expect(indexes).to eq(indexes.uniq)
+    expect(indexes).to eq((0...indexes.length).to_a)
+  end
+
   describe "zip input" do
     def build_zip(entries)
       file = Tempfile.new(["oc_tech", ".zip"])

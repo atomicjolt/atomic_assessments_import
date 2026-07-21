@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "nokogiri"
+require "atomic_assessments_import/exam_soft/oc_tech/document_parser"
 
 RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::DocumentParser do
   def parse(html)

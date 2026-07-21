@@ -9,6 +9,12 @@ Import converters for atomic assessments.  Currently this GEM supports the follo
     - Fill in the Blank / Cloze
     - Ordering
     - Essay
+* ExamSoft OC Tech (in RTF, HTML, DOCX, or ZIP-of-exam-printouts file format)
+    - Multiple Choice / Multiple Response
+    - Fill in the Blank (single and multi-part)
+    - Short Text
+    - Drag and Drop / Classification
+    - Bowtie
 
 For QTI conversion, see:
 
@@ -50,6 +56,35 @@ Convert a CSV to json on standard out:
 Convert an ExamSoft RTF to a learnosity archive:
 
     $ bin/convert input.rtf output.zip examsoft
+
+Convert an ExamSoft OC Tech exam printout to a learnosity archive:
+
+    $ bin/convert input.rtf output.zip examsoft_octech
+
+## ExamSoft OC Tech input format
+
+OC Tech exports exam printouts (answer-key copies of a proctored exam) as RTF, HTML, or
+DOCX files, or as a ZIP of several such files. Use source `examsoft_octech` for these -
+it is distinct from the classic `examsoft` source because OC Tech's printout layout,
+question types, and answer-key conventions differ from a standard ExamSoft export.
+
+* **Supported inputs:** `.rtf`, `.docx`, `.html`/`.xhtml`, and `.zip` archives containing
+  any mix of those file types. When a ZIP is supplied, each entry is converted
+  independently and the results are merged; one entry failing does not stop the others
+  from converting.
+* **One activity per file:** each source document (or ZIP entry) becomes exactly one
+  activity containing all of its questions, titled from the document's own title/header
+  or, if none is present, the file's basename.
+* **Answer-key requirement:** OC Tech printouts only carry answer information when
+  exported as an instructor/answer-key copy. Student-facing exports (e.g. exams that
+  have not yet been re-exported with the answer key) do not include this data, and
+  scorable questions (multiple choice, multiple response, fill in the blank, etc.)
+  cannot be converted without it. The converter raises an error identifying the
+  file when it detects a scorable question with no answer, rather than silently
+  producing an unscored item.
+* **Images:** any images embedded in the source document are extracted and included in
+  the output archive under `assets/`, with the corresponding question/item HTML rewritten
+  to reference them.
 
 ## CSV input format
 

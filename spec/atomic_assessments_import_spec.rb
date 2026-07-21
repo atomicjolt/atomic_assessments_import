@@ -36,4 +36,19 @@ RSpec.describe AtomicAssessmentsImport do
       expect(data[:questions].length).to eq(3)
     end
   end
+
+  describe "examsoft_octech registration" do
+    it "converts an OC Tech RTF end to end" do
+      result = described_class.convert(
+        File.join(__dir__, "fixtures/oc_tech/practice_exam.rtf"), "examsoft_octech"
+      )
+      expect(result[:activities].length).to eq(1)
+    end
+
+    it "rejects OC Tech files under the classic examsoft source only if type unsupported" do
+      expect {
+        described_class.convert(File.join(__dir__, "fixtures/simple.csv"), "examsoft_octech")
+      }.to raise_error(/Unsupported file type/)
+    end
+  end
 end

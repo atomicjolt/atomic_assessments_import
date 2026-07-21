@@ -20,7 +20,7 @@ module AtomicAssessmentsImport
         def self.parse(nodes, number)
           state = {
             stem: [], options: [], groups: [], metadata: {}, answers: [], warnings: [],
-            current_group: nil, seen_blank: false, indexed_answer_next: 1
+            current_group: nil, seen_blank: false, indexed_answer_next: 1, seen_metadata: false
           }
 
           nodes.each_with_index do |node, idx|
@@ -50,7 +50,8 @@ module AtomicAssessmentsImport
 
           if metadata_line?(text)
             state[:metadata].merge!(parse_metadata(text))
-          elsif (m = text.match(ANSWER_RE))
+            state[:seen_metadata] = true
+          elsif state[:seen_metadata] && (m = text.match(ANSWER_RE))
             state[:answers] << { part: m[1]&.to_i, text: m[2].strip }
           elsif (m = text.match(GROUP_RE)) && node.css("img, table").empty?
             state[:current_group] = { title: text.chomp(":"), choose: m[2].to_i, options: [] }

@@ -75,6 +75,18 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::QuestionParser do
     expect(q.answers).to eq([{ part: 1, text: "0, none" }])
   end
 
+  it "does not treat an in-stem instruction line beginning with Answer: as an answer key" do
+    q = parse(<<~HTML)
+      <p><strong>1. What is the calculated dose?</strong></p>
+      <p>Answer: (Remember to round to nearest tenth if 1.0 or greater and to nearest hundredth if less than 1.0)</p>
+      <p><em>Question ID: 34638 | Point Value: 20 | Categories:</em></p>
+      <p><strong>Answer: 8.1</strong></p>
+    HTML
+    expect(q.type).to eq(:fitb)
+    expect(q.answers).to eq([{ part: nil, text: "8.1" }])
+    expect(q.stem_html).to include("Answer: (Remember to round to nearest tenth")
+  end
+
   it "parses bowtie response groups" do
     q = parse(<<~HTML)
       <p><strong>1. Scenario text. Drag answers to the boxes.</strong></p>

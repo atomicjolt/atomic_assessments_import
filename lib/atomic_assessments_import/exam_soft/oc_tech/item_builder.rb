@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "securerandom"
+require "nokogiri"
 require_relative "question_parser"
 require_relative "../../questions/question"
 
@@ -165,20 +166,40 @@ module AtomicAssessmentsImport
         # Pre-place {{response}} markers so FillInTheBlank#build_stimulus
         # passes the text through unchanged (it only templates text that
         # doesn't already contain {{response}}).
+        #
+        # Markers are scanned and replaced only within visible TEXT nodes —
+        # never in the raw HTML string — so that literal underscore runs in
+        # attribute values (e.g. the ___EXPORT_ROOT___ asset path rewritten
+        # into <img src="___EXPORT_ROOT___/assets/...">) are never mistaken
+        # for fill-in-the-blank markers or corrupted by substitution.
         def self.build_fitb_template(parsed, primary_texts, warnings)
           stem = parsed.stem_html
-          marker_count = stem.scan(FITB_MARKER_RE).length
           appended = primary_texts.map { |_| "<p>{{response}}</p>" }.join
+
+          fragment = Nokogiri::HTML.fragment(stem)
+          text_nodes = fragment.xpath(".//text()")
+          marker_count = text_nodes.sum { |node| node.content.scan(FITB_MARKER_RE).length }
 
           if marker_count.zero?
             stem + appended
           elsif marker_count == primary_texts.length
-            templated = stem.dup
-            primary_texts.length.times { templated = templated.sub(FITB_MARKER_RE, "{{response}}") }
-            templated
+            replace_markers_in_text_nodes(text_nodes, primary_texts.length)
+            fragment.to_html
           else
             warnings << "Question #{parsed.number}: blank markers don't match answer count — review layout"
             stem + appended
+          end
+        end
+
+        # Replaces the first `remaining` FITB_MARKER_RE matches across the
+        # given text nodes, in document order, with {{response}}.
+        def self.replace_markers_in_text_nodes(text_nodes, remaining)
+          text_nodes.each do |node|
+            break if remaining.zero?
+
+            node.content = node.content.gsub(FITB_MARKER_RE) do |match|
+              remaining.positive? ? (remaining -= 1) && "{{response}}" : match
+            end
           end
         end
 

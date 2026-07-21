@@ -110,6 +110,32 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::ItemBuilder do
     expect(result[:warnings].join).to include("Question 5: blank markers don't match answer count — review layout")
   end
 
+  it "ignores the ___EXPORT_ROOT___ asset prefix and finds only the real text blank" do
+    result = build(Parsed.new(
+                     number: 7, type: :fitb,
+                     stem_html: '<p><img src="___EXPORT_ROOT___/assets/label.png"></p><p>How many mL? ___________</p>',
+                     options: [], groups: [], metadata: {},
+                     answers: [{ part: nil, text: "10" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template].scan("{{response}}").length).to eq(1)
+    expect(data[:template]).to include("___EXPORT_ROOT___/assets/label.png")
+    expect(result[:warnings].join).not_to include("blank markers don't match answer count")
+  end
+
+  it "appends a blank for an image-only FITB with no text markers, leaving the src untouched" do
+    result = build(Parsed.new(
+                     number: 8, type: :fitb,
+                     stem_html: '<p><img src="___EXPORT_ROOT___/assets/label.png"></p>',
+                     options: [], groups: [], metadata: {},
+                     answers: [{ part: nil, text: "10" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template]).to include("___EXPORT_ROOT___/assets/label.png")
+    expect(data[:template].scan("{{response}}").length).to eq(1)
+    expect(result[:warnings].join).not_to include("blank markers don't match answer count")
+  end
+
   it "builds bowtie unscored with choose-1 group centered and a warning" do
     result = build(Parsed.new(
                      number: 6, type: :bowtie, stem_html: "<p>Scenario.</p>", options: [],

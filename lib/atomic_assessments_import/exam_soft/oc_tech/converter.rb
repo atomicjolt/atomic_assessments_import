@@ -59,6 +59,13 @@ module AtomicAssessmentsImport
           end
         rescue ItemBuilder::MissingAnswerError => e
           raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
+        rescue AtomicAssessmentsImport::Error
+          raise
+        rescue StandardError => e
+          # Pandoc/Nokogiri/etc. can raise bare RuntimeErrors (e.g. a corrupt
+          # .docx). Wrap so the failure names the offending file instead of
+          # bubbling up an anonymous error that aborts the whole zip.
+          raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
         end
 
         private
@@ -114,7 +121,12 @@ module AtomicAssessmentsImport
               result = convert_single(tmp.path, filename: filename)
               merge_result!(merged, result)
               true
-            rescue AtomicAssessmentsImport::Error => e
+            rescue StandardError => e
+              # convert_single wraps its own failures in
+              # AtomicAssessmentsImport::Error, but this catches
+              # StandardError (not just that class) as a safety net so any
+              # exception escaping a single entry never aborts the rest of
+              # the zip.
               merged[:errors] << build_error(e.message.sub("#{filename}: ", ""), filename, error_type: "error")
               false
             end

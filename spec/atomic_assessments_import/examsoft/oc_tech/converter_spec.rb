@@ -94,5 +94,20 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
       zip = build_zip("bad.rtf" => bad)
       expect { described_class.new(zip).convert }.to raise_error(AtomicAssessmentsImport::Error)
     end
+
+    it "isolates a non-gem exception (e.g. a corrupt docx) instead of aborting the whole zip" do
+      corrupt = Tempfile.new(["corrupt", ".docx"])
+      corrupt.write("not a docx")
+      corrupt.flush
+
+      zip = build_zip("good.rtf" => good, "corrupt.docx" => corrupt.path)
+
+      result = nil
+      expect { result = described_class.new(zip).convert }.not_to raise_error
+
+      expect(result[:activities].length).to eq(1)
+      file_errors = result[:errors].select { |e| e[:error_type] == "error" }
+      expect(file_errors.map { |e| e[:message] }.join).to include("corrupt.docx")
+    end
   end
 end

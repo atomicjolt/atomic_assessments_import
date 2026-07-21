@@ -4,6 +4,8 @@ require "pandoc-ruby"
 require "nokogiri"
 require "tmpdir"
 require "securerandom"
+require "zip"
+require "tempfile"
 require_relative "../html_normalizer"
 require_relative "document_parser"
 require_relative "question_parser"
@@ -13,13 +15,19 @@ module AtomicAssessmentsImport
   module ExamSoft
     module OcTech
       class Converter
+        SUPPORTED_EXTENSIONS = %w[.rtf .docx .html .htm].freeze
+
         def initialize(file)
           @file = file
         end
 
         def convert
           path = @file.is_a?(String) ? @file : @file.path
-          convert_single(path, filename: File.basename(path))
+          if File.extname(path).casecmp(".zip").zero?
+            convert_zip(path)
+          else
+            convert_single(path, filename: File.basename(path))
+          end
         end
 
         # Convert one exam document to items + one activity. Used directly for
@@ -52,6 +60,59 @@ module AtomicAssessmentsImport
         end
 
         private
+
+        def convert_zip(zip_path)
+          merged = { activities: [], items: [], questions: [], features: [], assets: {}, errors: [] }
+          converted_any = false
+
+          Zip::File.open(zip_path) do |zip|
+            zip.each do |entry|
+              next unless entry.file?
+              next if skip_entry?(entry.name)
+
+              unless SUPPORTED_EXTENSIONS.include?(File.extname(entry.name).downcase)
+                merged[:errors] << build_error("skipped unsupported file type", entry.name)
+                next
+              end
+
+              converted = convert_zip_entry(entry, merged)
+              converted_any ||= converted
+            end
+          end
+
+          raise AtomicAssessmentsImport::Error, "No files in the zip could be converted" unless converted_any
+
+          merged
+        end
+
+        def skip_entry?(name)
+          name.start_with?("__MACOSX/") || File.basename(name).start_with?(".")
+        end
+
+        def convert_zip_entry(entry, merged)
+          filename = File.basename(entry.name)
+
+          Tempfile.create(["oc_tech_entry", File.extname(entry.name)]) do |tmp|
+            tmp.binmode
+            tmp.write(entry.get_input_stream.read)
+            tmp.flush
+
+            begin
+              result = convert_single(tmp.path, filename: filename)
+              merge_result!(merged, result)
+              true
+            rescue AtomicAssessmentsImport::Error => e
+              merged[:errors] << build_error(e.message.sub("#{filename}: ", ""), filename, error_type: "error")
+              false
+            end
+          end
+        end
+
+        def merge_result!(merged, result)
+          %i[activities items questions features].each { |key| merged[key].concat(result[key]) }
+          merged[:assets].merge!(result[:assets])
+          merged[:errors].concat(result[:errors])
+        end
 
         def build_items(blocks, title, filename, errors)
           items = []

@@ -2,6 +2,8 @@
 
 require "spec_helper"
 require "atomic_assessments_import/exam_soft/oc_tech/converter"
+require "zip"
+require "tempfile"
 
 RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
   subject(:result) { described_class.new(fixture).convert }
@@ -44,5 +46,33 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
   it "warns when parsed question count mismatches the declared total" do
     # practice_exam declares 3 and parses 3 — no warning
     expect(result[:errors].map { |e| e[:message] }.join).not_to include("declared")
+  end
+
+  describe "zip input" do
+    def build_zip(entries)
+      file = Tempfile.new(["oc_tech", ".zip"])
+      Zip::File.open(file.path, create: true) do |zip|
+        entries.each { |name, source| zip.add(name, source) }
+      end
+      file.path
+    end
+
+    let(:good) { File.join(__dir__, "../../../fixtures/oc_tech/practice_exam.rtf") }
+    let(:bad) { File.join(__dir__, "../../../fixtures/oc_tech/no_answers.rtf") }
+
+    it "creates one activity per successful entry and isolates failures" do
+      zip = build_zip("good.rtf" => good, "bad.rtf" => bad, "notes.txt" => good, "__MACOSX/x.rtf" => good)
+      result = described_class.new(zip).convert
+      expect(result[:activities].length).to eq(1)
+      expect(result[:items].length).to eq(3)
+      file_errors = result[:errors].select { |e| e[:error_type] == "error" }
+      expect(file_errors.map { |e| e[:message] }.join).to include("bad.rtf", "no answer key found")
+      expect(result[:errors].map { |e| e[:message] }.join).to include("notes.txt")
+    end
+
+    it "raises when no entry converts successfully" do
+      zip = build_zip("bad.rtf" => bad)
+      expect { described_class.new(zip).convert }.to raise_error(AtomicAssessmentsImport::Error)
+    end
   end
 end

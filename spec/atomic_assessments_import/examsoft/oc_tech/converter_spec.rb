@@ -128,6 +128,18 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
       )
     end
 
+    it "converts two good entries into two activities with merged items and assets" do
+      zip = build_zip("first.rtf" => good, "second.rtf" => good)
+      result = described_class.new(zip).convert
+
+      expect(result[:activities].length).to eq(2)
+      expect(result[:items].length).to eq(6)
+      # Both entries embed the same source image, so asset keys (derived from
+      # basename) collide on merge — assert assets are present rather than
+      # asserting an exact count of 2 distinct keys.
+      expect(result[:assets]).not_to be_empty
+    end
+
     it "isolates a non-gem exception (e.g. a corrupt docx) instead of aborting the whole zip" do
       corrupt = Tempfile.new(["corrupt", ".docx"])
       corrupt.write("not a docx")

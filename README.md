@@ -81,7 +81,9 @@ question types, and answer-key conventions differ from a standard ExamSoft expor
   scorable questions (multiple choice, multiple response, fill in the blank, etc.)
   cannot be converted without it. The converter raises an error identifying the
   file when it detects a scorable question with no answer, rather than silently
-  producing an unscored item.
+  producing an unscored item. Bowtie questions are exempt from this requirement —
+  they always import unscored, with a warning telling the teacher to set the
+  correct response in Learnosity authoring.
 * **Images:** any images embedded in the source document are extracted and included in
   the output archive under `assets/`, with the corresponding question/item HTML rewritten
   to reference them.

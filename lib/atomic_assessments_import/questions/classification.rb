@@ -37,7 +37,7 @@ module AtomicAssessmentsImport
 
       def correct_indices
         (@row["correct answer"] || "").split(";").map(&:strip).map(&:downcase)
-          .filter_map { |letter| LETTERS.index(letter) }
+                                      .filter_map { |letter| LETTERS.index(letter) }
       end
     end
   end

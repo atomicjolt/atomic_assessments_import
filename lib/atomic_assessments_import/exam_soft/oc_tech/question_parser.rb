@@ -98,6 +98,7 @@ module AtomicAssessmentsImport
         end
 
         def self.build_question(number, state)
+          fold_lone_group!(state)
           stem_html = state[:stem].map(&:to_html).join("\n")
           type = classify_type(stem_html, state)
           state[:warnings] << "Question #{number}: could not determine question type — skipped" if type == :unknown
@@ -112,6 +113,18 @@ module AtomicAssessmentsImport
             answers: state[:answers],
             warnings: state[:warnings],
           )
+        end
+
+        # A single "(choose N):" heading is not enough to make this a bowtie
+        # question (bowtie needs 2+ response groups) — it's most likely a
+        # stem line naming how many options to pick. Fold its options back
+        # into the plain options list so the question classifies as an
+        # options-bearing type instead of silently falling through to :fitb.
+        def self.fold_lone_group!(state)
+          return unless state[:groups].length == 1
+
+          state[:options].concat(state[:groups].first[:options])
+          state[:groups] = []
         end
 
         def self.classify_type(stem_html, state)

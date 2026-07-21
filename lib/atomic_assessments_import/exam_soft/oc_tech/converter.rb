@@ -102,7 +102,11 @@ module AtomicAssessmentsImport
             end
           end
 
-          raise AtomicAssessmentsImport::Error, "No files in the zip could be converted" unless converted_any
+          unless converted_any
+            details = merged[:errors].map { |e| e[:message] }.join("; ")
+            suffix = details.empty? ? "" : ": #{details}"
+            raise AtomicAssessmentsImport::Error, "No files in the zip could be converted#{suffix}"
+          end
 
           merged
         end
@@ -181,7 +185,8 @@ module AtomicAssessmentsImport
             src = img["src"].to_s
             local = File.expand_path(src.start_with?("/") ? src : File.join(media_dir, "..", src))
             local = File.join(media_dir, File.basename(src)) unless File.exist?(local)
-            next unless File.exist?(local) && File.expand_path(local).start_with?(File.expand_path(media_dir))
+            next unless File.exist?(local) &&
+                        File.expand_path(local).start_with?("#{File.expand_path(media_dir)}#{File::SEPARATOR}")
 
             zip_path = "assets/#{File.basename(local)}"
             assets[zip_path] = File.binread(local)

@@ -117,6 +117,21 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::QuestionParser do
     expect(q.type).to eq(:drag_and_drop)
   end
 
+  it "folds a lone (choose N): group's options back into options instead of turning the question into fitb" do
+    q = parse(<<~HTML)
+      <p><strong>1. Which apply?</strong></p>
+      <p>Response Options (choose 2):</p>
+      <p>A. one</p>
+      <p>B. two</p>
+      <p>C. three</p>
+      <p><em>Question ID: 9 | Point Value: 4 | Categories:</em></p>
+      <p><strong>Answer: A. one</strong></p>
+    HTML
+    expect(q.groups).to be_empty
+    expect(q.options.map { |o| o[:letter] }).to eq(%w[A B C])
+    expect(q.type).to eq(:multiple_choice)
+  end
+
   it "marks blocks with neither options nor answers as unknown" do
     q = parse("<p><strong>1. A stem only.</strong></p>")
     expect(q.type).to eq(:unknown)

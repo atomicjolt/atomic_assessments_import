@@ -68,6 +68,22 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
     expect(indexes).to eq((0...indexes.length).to_a)
   end
 
+  it "raises when a file contains no convertible questions" do
+    prose_only = Tempfile.new(["prose_only", ".rtf"])
+    prose_only.write(<<~RTF)
+      {\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033
+      {\\fonttbl{\\f0\\froman\\fcharset0 Times New Roman;}}
+      \\viewkind4\\uc1\\pard\\f0\\fs24
+      This document has no numbered questions in it at all, just prose.\\par
+      }
+    RTF
+    prose_only.flush
+
+    expect { described_class.new(prose_only.path).convert }.to raise_error(
+      AtomicAssessmentsImport::Error, /no questions could be converted/
+    )
+  end
+
   describe "zip input" do
     def build_zip(entries)
       file = Tempfile.new(["oc_tech", ".zip"])
@@ -93,6 +109,23 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
     it "raises when no entry converts successfully" do
       zip = build_zip("bad.rtf" => bad)
       expect { described_class.new(zip).convert }.to raise_error(AtomicAssessmentsImport::Error)
+    end
+
+    it "raises when a zip contains only a file with no convertible questions" do
+      prose_only = Tempfile.new(["prose_only", ".rtf"])
+      prose_only.write(<<~RTF)
+        {\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033
+        {\\fonttbl{\\f0\\froman\\fcharset0 Times New Roman;}}
+        \\viewkind4\\uc1\\pard\\f0\\fs24
+        This document has no numbered questions in it at all, just prose.\\par
+        }
+      RTF
+      prose_only.flush
+
+      zip = build_zip("prose_only.rtf" => prose_only.path)
+      expect { described_class.new(zip).convert }.to raise_error(
+        AtomicAssessmentsImport::Error, /No files in the zip could be converted/
+      )
     end
 
     it "isolates a non-gem exception (e.g. a corrupt docx) instead of aborting the whole zip" do

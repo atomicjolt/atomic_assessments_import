@@ -46,6 +46,8 @@ module AtomicAssessmentsImport
             errors = parsed_doc[:warnings].map { |w| build_error(w, filename) }
 
             items, questions = build_items(parsed_doc[:blocks], title, filename, errors)
+            raise AtomicAssessmentsImport::Error, "#{filename}: no questions could be converted" if items.empty?
+
             errors.concat(declared_count_errors(parsed_doc, filename))
 
             {

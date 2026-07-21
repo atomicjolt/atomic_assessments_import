@@ -103,33 +103,82 @@ module AtomicAssessmentsImport
           Questions::Question.load(row).to_learnosity
         end
 
+        FITB_MARKER_RE = /__\d+__|_{3,}/
+
         def self.build_fitb(parsed, warnings)
           if parsed.answers.empty?
             raise MissingAnswerError,
                   "no answer key found — request an ExamSoft export that includes answers"
           end
 
-          multi = parsed.answers.length > 1
-          parsed.answers.map.with_index do |answer, idx|
-            primary, alternates = split_alternates(answer[:text])
-            if alternates.any?
-              warnings << "Question #{parsed.number}: comma-separated answer treated as alternates — review scoring"
+          ordered = order_fitb_answers(parsed.answers)
+          multi = ordered.length > 1
+          primary_texts, alternate_answers = fitb_answer_texts(ordered, multi, parsed.number, warnings)
+
+          if primary_texts.any? { |text| text.include?(";") }
+            warnings << "Question #{parsed.number}: answer contains a semicolon — review scoring"
+          end
+
+          question_text = build_fitb_template(parsed, primary_texts, warnings)
+
+          row = base_row(parsed).merge(
+            "question type" => "fill_in_the_blank",
+            "question text" => question_text,
+            "correct answer" => primary_texts.join(";"),
+            "alternate answers" => alternate_answers,
+          )
+          [Questions::Question.load(row).to_learnosity]
+        end
+
+        # Parts are sorted by part number when every answer carries one;
+        # answers without parts are already in document (position) order.
+        def self.order_fitb_answers(answers)
+          return answers.sort_by { |a| a[:part] } if answers.all? { |a| a[:part] }
+
+          answers
+        end
+
+        # Comma-alternates (e.g. "0, none") only make sense for a single
+        # blank — for multi-part questions we fall back to primaries only
+        # and warn instead of guessing which blank an alternate belongs to.
+        def self.fitb_answer_texts(ordered, multi, number, warnings)
+          if multi
+            has_alternates = false
+            primary_texts = ordered.map do |answer|
+              primary, alternates = split_alternates(answer[:text])
+              has_alternates ||= alternates.any?
+              primary
             end
+            if has_alternates
+              warnings << "Question #{number}: alternates on multi-blank questions are not supported — review scoring"
+            end
+            [primary_texts, []]
+          else
+            primary, alternates = split_alternates(ordered.first[:text])
+            if alternates.any?
+              warnings << "Question #{number}: comma-separated answer treated as alternates — review scoring"
+            end
+            [[primary], alternates]
+          end
+        end
 
-            stimulus =
-              if idx.zero?
-                multi ? "#{parsed.stem_html}\n<p><strong>Part 1</strong></p>" : parsed.stem_html
-              else
-                "<p><strong>Part #{answer[:part] || idx + 1}</strong></p>"
-              end
+        # Pre-place {{response}} markers so FillInTheBlank#build_stimulus
+        # passes the text through unchanged (it only templates text that
+        # doesn't already contain {{response}}).
+        def self.build_fitb_template(parsed, primary_texts, warnings)
+          stem = parsed.stem_html
+          marker_count = stem.scan(FITB_MARKER_RE).length
+          appended = primary_texts.map { |_| "<p>{{response}}</p>" }.join
 
-            row = base_row(parsed).merge(
-              "question type" => "short_answer",
-              "question text" => stimulus,
-              "correct answer" => primary,
-              "alternate answers" => alternates,
-            )
-            Questions::Question.load(row).to_learnosity
+          if marker_count.zero?
+            stem + appended
+          elsif marker_count == primary_texts.length
+            templated = stem.dup
+            primary_texts.length.times { templated = templated.sub(FITB_MARKER_RE, "{{response}}") }
+            templated
+          else
+            warnings << "Question #{parsed.number}: blank markers don't match answer count — review layout"
+            stem + appended
           end
         end
 

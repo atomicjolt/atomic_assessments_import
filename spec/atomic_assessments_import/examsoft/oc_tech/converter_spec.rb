@@ -24,7 +24,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
     expect(result[:items].length).to eq(3)
     expect(result[:items].map { |i| i[:title] }).to eq(%w[34643 23271 34641])
     types = result[:questions].map { |q| q[:data][:type] }
-    expect(types).to eq(%w[shorttext mcq shorttext shorttext])
+    expect(types).to eq(%w[clozetext mcq clozetext])
   end
 
   it "extracts the embedded image into assets and rewrites the stem src" do
@@ -33,7 +33,10 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::Converter do
     expect(asset_path).to match(%r{\Aassets/.+\.png\z})
     expect(result[:assets][asset_path][0, 4].bytes).to eq([0x89, 0x50, 0x4E, 0x47])
     image_question = result[:questions].first
-    expect(image_question[:data][:stimulus]).to include("___EXPORT_ROOT___/#{asset_path}")
+    # clozetext puts the full question text in `template` and leaves
+    # `stimulus` blank, so the rewritten image src lands in the template.
+    expect(image_question[:data][:template]).to include("___EXPORT_ROOT___/#{asset_path}")
+    expect(image_question[:data][:template].scan("{{response}}").length).to eq(1)
   end
 
   it "raises a file-level error for answer-less scorable files" do

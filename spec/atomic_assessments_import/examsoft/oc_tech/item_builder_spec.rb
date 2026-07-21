@@ -45,8 +45,9 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::ItemBuilder do
                      answers: [{ part: 1, text: "0, none" }], warnings: []
                    ))
     data = result[:questions].first[:data]
-    expect(data[:validation][:valid_response][:value]).to eq("0")
-    expect(data[:validation][:alt_responses]).to eq([{ score: 3.33, value: "none" }])
+    expect(data[:type]).to eq("clozetext")
+    expect(data[:validation][:valid_response][:value]).to eq(["0"])
+    expect(data[:validation][:alt_responses]).to eq([{ score: 3.33, value: ["none"] }])
     expect(result[:warnings].join).to include("alternates")
   end
 
@@ -55,19 +56,58 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::ItemBuilder do
                      number: 1, type: :fitb, stem_html: "<p>x ___</p>", options: [], groups: [],
                      metadata: {}, answers: [{ part: nil, text: "1,000" }], warnings: []
                    ))
-    expect(result[:questions].first[:data][:validation][:valid_response][:value]).to eq("1,000")
+    expect(result[:questions].first[:data][:validation][:valid_response][:value]).to eq(["1,000"])
   end
 
-  it "builds one shorttext per answer part" do
+  it "builds one clozetext question for a multi-part FITB" do
     result = build(Parsed.new(
                      number: 3, type: :fitb, stem_html: "<p>How long and when?</p>", options: [], groups: [],
                      metadata: { "point value" => "20" },
                      answers: [{ part: 1, text: "8 hours 20 minutes" }, { part: 2, text: "1420" }], warnings: []
                    ))
-    expect(result[:questions].length).to eq(2)
-    expect(result[:item][:questions].length).to eq(2)
-    expect(result[:questions][0][:data][:stimulus]).to include("How long", "Part 1")
-    expect(result[:questions][1][:data][:stimulus]).to eq("<p><strong>Part 2</strong></p>")
+    expect(result[:questions].length).to eq(1)
+    expect(result[:item][:questions].length).to eq(1)
+    data = result[:questions].first[:data]
+    expect(data[:type]).to eq("clozetext")
+    expect(data[:validation][:valid_response][:value]).to eq(["8 hours 20 minutes", "1420"])
+    expect(data[:template].scan("{{response}}").length).to eq(2)
+  end
+
+  it "collapses an 11-underscore run into exactly one inline blank" do
+    result = build(Parsed.new(
+                     number: 1, type: :fitb, stem_html: "<p>Amount? ___________</p>", options: [], groups: [],
+                     metadata: {}, answers: [{ part: nil, text: "1.7" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template]).to eq("<p>Amount? {{response}}</p>")
+  end
+
+  it "replaces a __1__ numbered marker" do
+    result = build(Parsed.new(
+                     number: 1, type: :fitb, stem_html: "<p>The __1__ is red.</p>", options: [], groups: [],
+                     metadata: {}, answers: [{ part: nil, text: "sky" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template]).to eq("<p>The {{response}} is red.</p>")
+  end
+
+  it "appends a blank when the stem has no markers" do
+    result = build(Parsed.new(
+                     number: 1, type: :fitb, stem_html: "<p>Name it.</p>", options: [], groups: [],
+                     metadata: {}, answers: [{ part: nil, text: "answer" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template]).to eq("<p>Name it.</p><p>{{response}}</p>")
+  end
+
+  it "warns and appends blanks when marker count doesn't match answer count" do
+    result = build(Parsed.new(
+                     number: 5, type: :fitb, stem_html: "<p>__1__ and __2__</p>", options: [], groups: [],
+                     metadata: {}, answers: [{ part: nil, text: "only one" }], warnings: []
+                   ))
+    data = result[:questions].first[:data]
+    expect(data[:template]).to eq("<p>__1__ and __2__</p><p>{{response}}</p>")
+    expect(result[:warnings].join).to include("Question 5: blank markers don't match answer count — review layout")
   end
 
   it "builds bowtie unscored with choose-1 group centered and a warning" do

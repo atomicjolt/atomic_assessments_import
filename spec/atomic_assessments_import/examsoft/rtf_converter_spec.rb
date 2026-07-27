@@ -7,6 +7,21 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     File.join("spec/fixtures", name)
   end
 
+  # Strips the first correct-answer marker from simple.rtf, which produces a
+  # single "No correct answer found" warning while Questions 2 and 3 still
+  # convert. Used to exercise the filename-prefix and error-index behavior
+  # against a result that actually has errors, instead of vacuously against
+  # simple.rtf's zero-error conversion.
+  def result_with_missing_correct_answer
+    modified_rtf_file = Tempfile.new(["temp", ".rtf"])
+    original_content = File.read(fixture_path("simple.rtf"))
+    modified_content = original_content.sub(/\*([a-oA-O]\))/, '\1')
+    modified_rtf_file.write(modified_content)
+    modified_rtf_file.rewind
+
+    [described_class.new(modified_rtf_file).convert, File.basename(modified_rtf_file.path)]
+  end
+
   describe "#convert" do
     before(:all) do
       @data = described_class.new("spec/fixtures/simple.rtf").convert
@@ -163,12 +178,14 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "prefixes conversion warnings with the filename" do
-      result = described_class.new(fixture_path("simple.rtf")).convert
-      result[:errors].each { |e| expect(e[:message]).to start_with("simple.rtf: ") }
+      result, filename = result_with_missing_correct_answer
+      expect(result[:errors]).not_to be_empty
+      result[:errors].each { |e| expect(e[:message]).to start_with("#{filename}: ") }
     end
 
     it "assigns sequential unique error indexes" do
-      result = described_class.new(fixture_path("simple.rtf")).convert
+      result, = result_with_missing_correct_answer
+      expect(result[:errors]).not_to be_empty
       expect(result[:errors].map { |e| e[:index] }).to eq((0...result[:errors].length).to_a)
     end
 

@@ -96,10 +96,10 @@ module AtomicAssessmentsImport
         assets
       end
 
-      # NOTE(#2237): every converted file becomes exactly one activity so
-      # that ExamSoft imports (classic or OC Tech) group their items the
-      # same way a Canvas quiz import would, instead of leaving them as
-      # ungrouped loose items.
+      # NOTE(#2237): one activity per source file. The issue also asks that a single
+      # file containing MULTIPLE exams split into one activity each — deferred until a
+      # real classic-format sample shows what an exam boundary looks like (we have no
+      # sample defining one). Revisit when such a file exists.
       def build_activity(title, items)
         {
           reference: SecureRandom.uuid,

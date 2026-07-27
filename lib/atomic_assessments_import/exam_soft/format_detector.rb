@@ -16,7 +16,7 @@ module AtomicAssessmentsImport
     # lambda, append a row here, and pin the new signature against the
     # existing ones in format_detector_spec.
     module FormatDetector
-      OC_TECH_STATS_RE = /Total Questions:\s*\d+/i
+      OC_TECH_STATS_RE = /\|\s*Total Questions:\s*\d+/i
       OC_TECH_QUESTION_META_RE = /\AQuestion ID:\s*\d+\s*\|.*Point Value:/i
       FIRST_QUESTION_RE = /\A1\.(\s|\z)/
 

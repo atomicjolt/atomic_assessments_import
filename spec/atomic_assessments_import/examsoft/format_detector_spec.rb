@@ -33,6 +33,16 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::FormatDetector do
     HTML
   end
 
+  it "does not detect OC Tech from a non-piped 'Total Questions' line before question 1" do
+    expect(detect(<<~HTML)).to be_nil
+      <p>Exam: Midterm 2024</p>
+      <p>Total Questions: 4</p>
+      <p>Folder: Science Title: Q1 Category: Biology/Cells 1) What is the powerhouse of the cell?</p>
+      <p>*a) Mitochondria</p>
+      <p>b) Nucleus</p>
+    HTML
+  end
+
   it "returns nil for classic-format content" do
     expect(detect(<<~HTML)).to be_nil
       <p>Folder: Geography Title: Question 1 Category: Subject/Capitals 1) What is the capital of France?</p>

@@ -2,6 +2,7 @@
 
 require "pandoc-ruby"
 require "nokogiri"
+require "securerandom"
 require "active_support/core_ext/digest/uuid"
 
 require_relative "../questions/question"
@@ -36,10 +37,12 @@ module AtomicAssessmentsImport
         end
 
         # Log header info if present
+        header_text = nil
         unless chunk_result[:header_nodes].empty?
           header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ")
           all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
         end
+        activity_title = header_text&.strip&.presence || fallback_title
 
         items = []
         questions = []
@@ -73,7 +76,7 @@ module AtomicAssessmentsImport
         end
 
         {
-          activities: [],
+          activities: items.any? ? [build_activity(activity_title, items)] : [],
           items: items,
           questions: questions,
           features: [],
@@ -82,6 +85,30 @@ module AtomicAssessmentsImport
       end
 
       private
+
+      def fallback_title
+        path = @file.is_a?(String) ? @file : @file.path
+        File.basename(path, ".*")
+      end
+
+      # NOTE(#2237): one activity per source file. The issue also asks that a single
+      # file containing MULTIPLE exams split into one activity each — deferred until a
+      # real classic-format sample shows what an exam boundary looks like (we have no
+      # sample defining one). Revisit when such a file exists.
+      def build_activity(title, items)
+        {
+          reference: SecureRandom.uuid,
+          title: title,
+          description: "",
+          data: {
+            config: { title: title },
+            rendering_type: "assess",
+            items: items.map { |item| { reference: item[:reference], id: item[:reference] } },
+          },
+          status: "published",
+          tags: {},
+        }
+      end
 
       def build_warning(message, index: nil, question_type: nil)
         {
@@ -164,7 +191,7 @@ module AtomicAssessmentsImport
         # ExamSoft has a dedicated Multiple Answer question type, but Learnosity does not, so we need to update the question type and UI style for those questions
         question_learnosity = question.to_learnosity
         if row["question type"] == "ma"
-          question_learnosity[:data][:ui_style] = { choice_label: "upper-alpha", type: "block" }
+          question_learnosity[:data][:ui_style] = { type: "horizontal" }
           question_learnosity[:data][:multiple_responses] = true
         end
 

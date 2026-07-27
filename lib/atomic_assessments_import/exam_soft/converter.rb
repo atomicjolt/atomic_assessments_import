@@ -37,8 +37,12 @@ module AtomicAssessmentsImport
         end
 
         # Log header info if present
-        header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ").strip
-        all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
+        header_text = nil
+        unless chunk_result[:header_nodes].empty?
+          header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ")
+          all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
+        end
+        activity_title = header_text&.strip&.presence || fallback_title
 
         items = []
         questions = []
@@ -72,7 +76,7 @@ module AtomicAssessmentsImport
         end
 
         {
-          activities: items.any? ? [build_activity(header_text.presence || fallback_title, items)] : [],
+          activities: items.any? ? [build_activity(activity_title, items)] : [],
           items: items,
           questions: questions,
           features: [],

@@ -73,6 +73,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
 
 
       expect(data[:activities].length).to eq(1)
+      expect(data[:activities].first[:title]).to eq(File.basename(html.path, ".*"))
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -158,6 +159,31 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       # Items with empty definition.widgets cause Learnosity to reject the entire batch
       items_with_empty_widgets = data[:items].select { |i| i[:definition][:widgets].empty? }
       expect(items_with_empty_widgets).to be_empty
+    end
+
+    it "keeps the header warning byte-identical to main when header_nodes include a text-empty node" do
+      # Regression test: a table with no text content (pandoc keeps <table> as its own
+      # top-level node rather than wrapping it in a <p>, unlike <img>) lands in
+      # header_nodes ahead of the real header text. Main's un-stripped join produces a
+      # leading space before "Real Header", so the warning message has TWO spaces after
+      # the colon ("...detected: " + " Real Header"). The activity title must still be
+      # stripped, so it should read as the clean "Real Header".
+      html = <<~HTML
+        <table><tr><td></td></tr></table>
+        <p>Real Header</p>
+        <p>1) Q? ~ f</p>
+        <p>*a) yes</p>
+        <p>b) no</p>
+      HTML
+
+      padded_header_file = Tempfile.new(["padded_header", ".html"])
+      padded_header_file.write(html)
+      padded_header_file.rewind
+
+      data = described_class.new(padded_header_file).convert
+
+      expect(data[:errors]).to include(a_hash_including(message: "Exam header detected:  Real Header"))
+      expect(data[:activities].first[:title]).to eq("Real Header")
     end
   end
 end

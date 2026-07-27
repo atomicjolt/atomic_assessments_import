@@ -73,6 +73,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
 
 
       expect(data[:activities].length).to eq(1)
+      expect(data[:activities].first[:title]).to eq(File.basename(docx.path, ".*"))
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])

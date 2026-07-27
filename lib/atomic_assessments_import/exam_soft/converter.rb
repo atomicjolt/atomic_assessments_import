@@ -3,10 +3,13 @@
 require "pandoc-ruby"
 require "nokogiri"
 require "active_support/core_ext/digest/uuid"
+require "tmpdir"
+require "securerandom"
 
 require_relative "../utils"
 require_relative "classic_pipeline"
 require_relative "html_normalizer"
+require_relative "format_detector"
 
 module AtomicAssessmentsImport
   module ExamSoft
@@ -16,37 +19,101 @@ module AtomicAssessmentsImport
       end
 
       def convert
-        html = normalize_to_html
-        doc = Nokogiri::HTML.fragment(html)
-        HtmlNormalizer.normalize!(doc)
+        path = @file.is_a?(String) ? @file : @file.path
+        finalize_errors(convert_single(path, filename: File.basename(path)))
+      end
 
-        result = ClassicPipeline.convert_document(doc)
+      # One exam document → items + one activity. Public: the zip path
+      # (Task 5) calls it per entry and finalizes once, zip-wide.
+      def convert_single(path, filename:)
+        Dir.mktmpdir("examsoft_media") do |media_dir|
+          html = PandocRuby.new([path], from: source_format(path), "extract-media" => media_dir).to_html
+          doc = Nokogiri::HTML.fragment(html)
+          HtmlNormalizer.normalize!(doc)
+          assets = collect_assets!(doc, media_dir)
 
-        {
-          activities: [],
-          items: result[:items],
-          questions: result[:questions],
-          features: [],
-          errors: result[:errors],
-        }
+          format = FormatDetector.detect(doc)
+          pipeline = format ? format[:pipeline] : ClassicPipeline
+          result = pipeline.convert_document(doc)
+
+          title = result[:title].presence || File.basename(filename, ".*")
+          errors = result[:errors].each { |e| e[:message] = "#{filename}: #{e[:message]}" }
+          raise AtomicAssessmentsImport::Error, "#{filename}: no questions could be converted" if result[:items].empty?
+
+          {
+            activities: [build_activity(title, result[:items])],
+            items: result[:items],
+            questions: result[:questions],
+            features: result[:features],
+            assets: assets,
+            errors: errors,
+          }
+        end
+      rescue OcTech::ItemBuilder::MissingAnswerError => e
+        raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
+      rescue AtomicAssessmentsImport::Error
+        raise
+      rescue StandardError => e
+        raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
       end
 
       private
 
-      def normalize_to_html
-        # Note: Pandoc Ruby takes either a file path or a string of content, but not a File object directly, so we have to handle both cases here
-        if @file.is_a?(String)
-          # File path as string
-          PandocRuby.new([@file], from: @file.split(".").last).to_html
-        elsif @file.respond_to?(:path) && @file.respond_to?(:read)
-          # File-like object (File, Tempfile, etc.)
-          source_type = @file.path.split(".").last.match(/^[a-zA-Z]+/)[0]
-          PandocRuby.new(@file.read, from: source_type).to_html
-        else
-          raise ArgumentError, "Expected a file path (String) or file-like object, got #{@file.class}"
-        end
+      # Assigns each error a sequential, unique 0-based `index` across the
+      # whole outgoing result (file-wide for a single file, zip-wide when
+      # convert_single results have been merged). The Rails app persists
+      # errors via find_or_create_by(qti_item_id:, index:), so without this
+      # every error but the first would collide on the shared nil index and
+      # be silently dropped.
+      def finalize_errors(result)
+        result[:errors].each_with_index { |error, index| error[:index] = index }
+        result
       end
 
+      def source_format(path)
+        ext = File.extname(path).delete(".").downcase
+        ext = "html" if ext == "htm"
+        ext
+      end
+
+      # Pull pandoc-extracted media into memory, keyed by zip path, and
+      # rewrite <img src> to the ___EXPORT_ROOT___ convention the Rails
+      # importer's upload_assets! expects.
+      def collect_assets!(doc, media_dir)
+        assets = {}
+        doc.css("img").each do |img|
+          src = img["src"].to_s
+          local = File.expand_path(src.start_with?("/") ? src : File.join(media_dir, "..", src))
+          local = File.join(media_dir, File.basename(src)) unless File.exist?(local)
+          next unless File.exist?(local) &&
+                      File.expand_path(local).start_with?("#{File.expand_path(media_dir)}#{File::SEPARATOR}")
+
+          zip_path = "assets/#{File.basename(local)}"
+          assets[zip_path] = File.binread(local)
+          img["src"] = "___EXPORT_ROOT___/#{zip_path}"
+          img.remove_attribute("style")
+        end
+        assets
+      end
+
+      # NOTE(#2237): every converted file becomes exactly one activity so
+      # that ExamSoft imports (classic or OC Tech) group their items the
+      # same way a Canvas quiz import would, instead of leaving them as
+      # ungrouped loose items.
+      def build_activity(title, items)
+        {
+          reference: SecureRandom.uuid,
+          title: title,
+          description: "",
+          data: {
+            config: { title: title },
+            rendering_type: "assess",
+            items: items.map { |i| { reference: i[:reference], id: i[:reference] } },
+          },
+          status: "published",
+          tags: {},
+        }
+      end
     end
   end
 end

@@ -97,7 +97,7 @@ RSpec.describe "ExamSoft Integration" do
 
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:features]).to eq([])
 
       item1 = data[:items].find { |i| i[:title] == "Question 1" }

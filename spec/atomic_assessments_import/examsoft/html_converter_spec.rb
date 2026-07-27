@@ -12,7 +12,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       path = "spec/fixtures/simple.html"
       data = described_class.new(path).convert
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -64,14 +64,14 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "converts a HTML from a Tempfile" do
-      html = Tempfile.new("temp.html")
+      html = Tempfile.new(["temp", ".html"])
       original_content = File.read("spec/fixtures/simple.html")
       html.write(original_content)
       html.rewind
       data = described_class.new(html).convert
 
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -120,7 +120,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "warns if no options are given" do
-      modified_file = Tempfile.new("modified.html")
+      modified_file = Tempfile.new(["modified", ".html"])
       original_content = File.read("spec/fixtures/simple.html")
       # Remove option lines (e.g., "*a) Paris" or "b) Versailles") from the HTML.
       # In HTML, options appear as text within <p> tags, so we remove lines
@@ -134,9 +134,13 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "warns if no correct answer is given" do
-      modified_file = Tempfile.new("temp.html")
+      modified_file = Tempfile.new(["temp", ".html"])
       original_content = File.read("spec/fixtures/simple.html")
-      modified_content = original_content.gsub(/\*([a-oA-O]\))/, '\1')
+      # Only strip the first correct-answer marker (Question 1's) so Questions
+      # 2 and 3 still convert — stripping all three would leave zero
+      # convertible items and trip the "no questions could be converted"
+      # guard instead of exercising this warning.
+      modified_content = original_content.sub(/\*([a-oA-O]\))/, '\1')
       modified_file.write(modified_content)
       modified_file.rewind
 
@@ -145,11 +149,13 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "does not include items with empty definition.widgets in the output" do
-      modified_file = Tempfile.new("temp.html")
+      modified_file = Tempfile.new(["temp", ".html"])
       original_content = File.read("spec/fixtures/simple.html")
-      # Remove asterisk from correct answers so MCQ raises "Missing correct answer"
-      # and falls back to convert_row_minimal which produces definition: { widgets: [] }
-      modified_content = original_content.gsub(/\*([a-oA-O]\))/, '\1')
+      # Remove the first correct-answer marker only (Question 1's), leaving
+      # Questions 2 and 3 convertible — Question 1 then has no published
+      # status and is skipped entirely rather than emitted with empty
+      # widgets, so the invariant below still has non-trivial items to check.
+      modified_content = original_content.sub(/\*([a-oA-O]\))/, '\1')
       modified_file.write(modified_content)
       modified_file.rewind
 

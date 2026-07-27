@@ -4,6 +4,7 @@ Import converters for atomic assessments.  Currently this GEM supports the follo
 * CSV 
     - Multiple Choice
 * ExamSoft (in RTF, HTML, or DOCX file format)
+    - Each imported file produces one Learnosity activity containing its questions in order (titled from the exam header when present, else the file name)
     - Multiple Choice
     - True/False
     - Fill in the Blank / Cloze

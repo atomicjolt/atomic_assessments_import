@@ -10,6 +10,7 @@ require_relative "../html_normalizer"
 require_relative "document_parser"
 require_relative "question_parser"
 require_relative "item_builder"
+require_relative "../oc_tech"
 
 module AtomicAssessmentsImport
   module ExamSoft
@@ -41,14 +42,13 @@ module AtomicAssessmentsImport
             HtmlNormalizer.normalize!(doc)
 
             assets = collect_assets!(doc, media_dir)
-            parsed_doc = DocumentParser.parse(doc)
-            title = parsed_doc[:title].presence || File.basename(filename, ".*")
-            errors = parsed_doc[:warnings].map { |w| build_error(w, filename) }
+            pipeline_result = OcTech.convert_document(doc)
+            title = pipeline_result[:title].presence || File.basename(filename, ".*")
+            items = pipeline_result[:items]
+            questions = pipeline_result[:questions]
+            errors = pipeline_result[:errors].map { |e| e.merge(message: "#{filename}: #{e[:message]}") }
 
-            items, questions = build_items(parsed_doc[:blocks], title, filename, errors)
             raise AtomicAssessmentsImport::Error, "#{filename}: no questions could be converted" if items.empty?
-
-            errors.concat(declared_count_errors(parsed_doc, filename))
 
             {
               activities: [build_activity(title, items)],
@@ -143,31 +143,6 @@ module AtomicAssessmentsImport
           %i[activities items questions features].each { |key| merged[key].concat(result[key]) }
           merged[:assets].merge!(result[:assets])
           merged[:errors].concat(result[:errors])
-        end
-
-        def build_items(blocks, title, filename, errors)
-          items = []
-          questions = []
-
-          blocks.each_with_index do |nodes, index|
-            parsed = QuestionParser.parse(nodes, index + 1)
-            parsed.warnings.each { |w| errors << build_error(w, filename) }
-            next if parsed.type == :unknown
-
-            built = ItemBuilder.build(parsed, exam_title: title)
-            built[:warnings].each { |w| errors << build_error(w, filename, question_type: parsed.type.to_s) }
-            items << built[:item]
-            questions.concat(built[:questions])
-          end
-
-          [items, questions]
-        end
-
-        def declared_count_errors(parsed_doc, filename)
-          declared = parsed_doc[:declared_counts]["Total Questions"]
-          return [] unless declared && declared != parsed_doc[:blocks].length
-
-          [build_error("header declares #{declared} questions, parsed #{parsed_doc[:blocks].length}", filename)]
         end
 
         def source_format(path)

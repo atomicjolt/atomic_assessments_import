@@ -41,16 +41,8 @@ module AtomicAssessmentsImport
   ## html
   register_converter("text/html", "examsoft", ExamSoft::Converter)
   register_converter("application/xhtml+xml", "examsoft", ExamSoft::Converter)
-
-  # ExamSoft (OC Tech) converters - exam printout format. The unified
-  # ExamSoft::Converter auto-detects OC Tech vs. classic per document (see
-  # FormatDetector), so "examsoft_octech" now routes to the same class as
-  # "examsoft" for single files. Zip support (application/zip) isn't wired
-  # into the unified converter yet — that's Task 5.
-  register_converter("application/rtf", "examsoft_octech", ExamSoft::Converter)
-  register_converter("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "examsoft_octech", ExamSoft::Converter)
-  register_converter("text/html", "examsoft_octech", ExamSoft::Converter)
-  register_converter("application/xhtml+xml", "examsoft_octech", ExamSoft::Converter)
+  ## zip (mixed classic/OC Tech entries, routed per-entry; see ExamSoft::Converter#convert)
+  register_converter("application/zip", "examsoft", ExamSoft::Converter)
 
   def self.convert_to_aa_format(input_path, output_path, import_from: nil)
     result = convert(input_path, import_from)

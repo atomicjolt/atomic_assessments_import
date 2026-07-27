@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "nokogiri"
-require "active_support/core_ext/digest/uuid"
 
 require_relative "../questions/question"
 require_relative "../questions/multiple_choice"
@@ -36,7 +35,7 @@ module AtomicAssessmentsImport
           # Extract fields from this chunk
           extraction = Extractor.extract(chunk_nodes)
           extraction[:warnings].each do |w|
-            errors << build_warning("Question #{index + 1}: #{w}", index: index, question_type: extraction[:row]["question type"])
+            errors << build_warning("Question #{index + 1}: #{w}", question_type: extraction[:row]["question type"])
           end
 
           row = extraction[:row]
@@ -44,7 +43,7 @@ module AtomicAssessmentsImport
 
           # Skip completely unparseable chunks
           if row["question text"].nil? && row["option a"].nil?
-            errors << build_warning("Question #{index + 1}: Skipped — no usable content found", index: index)
+            errors << build_warning("Question #{index + 1}: Skipped — no usable content found")
             next
           end
 
@@ -56,7 +55,7 @@ module AtomicAssessmentsImport
             questions += question_widgets
           rescue StandardError => e
             title = row["title"] || "Question #{index + 1}"
-            errors << build_warning("#{title}: #{e.message}", index: index, question_type: row["question type"])
+            errors << build_warning("#{title}: #{e.message}", question_type: row["question type"])
           end
         end
 
@@ -69,13 +68,15 @@ module AtomicAssessmentsImport
         }
       end
 
-      def self.build_warning(message, index: nil, question_type: nil)
+      # index is intentionally omitted here — Converter#finalize_errors
+      # assigns the final :index on every error/warning after all pipelines run.
+      def self.build_warning(message, question_type: nil)
         {
           error_type: "warning",
           question_type: question_type,
           message: message,
           qti_item_id: nil,
-          index: index,
+          index: nil,
         }
       end
 

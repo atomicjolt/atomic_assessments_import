@@ -2,7 +2,6 @@
 
 require "pandoc-ruby"
 require "nokogiri"
-require "active_support/core_ext/digest/uuid"
 require "tmpdir"
 require "securerandom"
 require "zip"

@@ -33,6 +33,13 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::FormatDetector do
     HTML
   end
 
+  it "does not detect OC Tech from a piped stats-like line after a classic-numbered first question" do
+    expect(detect(<<~HTML)).to be_nil
+      <p><strong>1) The stem discusses survey design.</strong></p>
+      <p>Respondents reported | Total Questions: 12 in the booklet.</p>
+    HTML
+  end
+
   it "does not detect OC Tech from a non-piped 'Total Questions' line before question 1" do
     expect(detect(<<~HTML)).to be_nil
       <p>Exam: Midterm 2024</p>

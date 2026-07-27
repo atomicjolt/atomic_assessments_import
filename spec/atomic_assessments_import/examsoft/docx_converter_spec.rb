@@ -12,7 +12,8 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       path = "spec/fixtures/simple.docx"
       data = described_class.new(path).convert
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
+      expect(data[:activities].first[:title]).to eq("simple")
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -71,7 +72,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       data = described_class.new(docx).convert
 
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])

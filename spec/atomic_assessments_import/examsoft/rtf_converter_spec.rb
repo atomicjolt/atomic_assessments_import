@@ -12,7 +12,8 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       path = "spec/fixtures/simple.rtf"
       data = described_class.new(path).convert
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
+      expect(data[:activities].first[:title]).to eq("simple")
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -72,7 +73,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       data = described_class.new(rtf).convert
 
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -140,6 +141,27 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
 
       data = described_class.new(modified_rtf_file).convert
       expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/correct answer/i)))
+    end
+
+    describe "activity creation (issue #2237)" do
+      it "wraps all items in one activity titled from the filename when no header exists" do
+        result = described_class.new("spec/fixtures/simple.rtf").convert
+        expect(result[:activities].length).to eq(1)
+        activity = result[:activities].first
+        expect(activity[:title]).to eq("simple")
+        expect(activity[:data][:config][:title]).to eq("simple")
+        expect(activity[:data][:rendering_type]).to eq("assess")
+        expect(activity[:status]).to eq("published")
+        expect(activity[:data][:items]).to eq(result[:items].map { |i| { reference: i[:reference], id: i[:reference] } })
+      end
+
+      it "returns no activity when nothing converts" do
+        Tempfile.create(["empty", ".html"]) do |f|
+          f.write("<p></p>")
+          f.flush
+          expect(described_class.new(f.path).convert[:activities]).to eq([])
+        end
+      end
     end
   end
 end

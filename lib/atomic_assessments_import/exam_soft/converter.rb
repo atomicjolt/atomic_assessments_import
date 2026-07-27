@@ -2,6 +2,7 @@
 
 require "pandoc-ruby"
 require "nokogiri"
+require "securerandom"
 require "active_support/core_ext/digest/uuid"
 
 require_relative "../questions/question"
@@ -36,10 +37,8 @@ module AtomicAssessmentsImport
         end
 
         # Log header info if present
-        unless chunk_result[:header_nodes].empty?
-          header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ")
-          all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
-        end
+        header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ").strip
+        all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
 
         items = []
         questions = []
@@ -73,7 +72,7 @@ module AtomicAssessmentsImport
         end
 
         {
-          activities: [],
+          activities: items.any? ? [build_activity(header_text.presence || fallback_title, items)] : [],
           items: items,
           questions: questions,
           features: [],
@@ -82,6 +81,30 @@ module AtomicAssessmentsImport
       end
 
       private
+
+      def fallback_title
+        path = @file.is_a?(String) ? @file : @file.path
+        File.basename(path, ".*")
+      end
+
+      # NOTE(#2237): one activity per source file. The issue also asks that a single
+      # file containing MULTIPLE exams split into one activity each — deferred until a
+      # real classic-format sample shows what an exam boundary looks like (we have no
+      # sample defining one). Revisit when such a file exists.
+      def build_activity(title, items)
+        {
+          reference: SecureRandom.uuid,
+          title: title,
+          description: "",
+          data: {
+            config: { title: title },
+            rendering_type: "assess",
+            items: items.map { |item| { reference: item[:reference], id: item[:reference] } },
+          },
+          status: "published",
+          tags: {},
+        }
+      end
 
       def build_warning(message, index: nil, question_type: nil)
         {

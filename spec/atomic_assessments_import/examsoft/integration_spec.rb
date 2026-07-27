@@ -47,6 +47,11 @@ RSpec.describe "ExamSoft Integration" do
       # Should have warnings about Q2 (no options for what looks like MCQ)
       expect(data[:errors].length).to be > 0
     end
+
+    it "titles the activity from the detected exam header" do
+      result = AtomicAssessmentsImport::ExamSoft::Converter.new("spec/fixtures/messy_document.html").convert
+      expect(result[:activities].first[:title]).to eq("Some random header text")
+    end
   end
 
   describe "single-paragraph RTF format" do
@@ -93,7 +98,8 @@ RSpec.describe "ExamSoft Integration" do
 
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
+      expect(data[:activities].first[:title]).to eq("simple")
       expect(data[:features]).to eq([])
 
       item1 = data[:items].find { |i| i[:title] == "Question 1" }

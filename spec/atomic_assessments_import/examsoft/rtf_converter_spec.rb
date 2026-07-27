@@ -64,6 +64,20 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       expect(question1[:data][:validation][:valid_response][:value].length).to be > 0
     end
 
+    it "renders single-answer multiple choice questions with the standard horizontal layout" do
+      question1 = @data[:questions].find { |q| q[:data][:stimulus] == "What is the capital of France?" }
+      expect(question1).not_to be_nil
+      expect(question1[:data][:ui_style]).to eq({ type: "horizontal" })
+      expect(question1[:data][:multiple_responses]).to be(false)
+    end
+
+    it "renders multiple-answer (Type: MA) questions with horizontal layout and multiple_responses true" do
+      question2 = @data[:questions].find { |q| q[:data][:stimulus] == "What is the capital of Germany?" }
+      expect(question2).not_to be_nil
+      expect(question2[:data][:ui_style]).to eq({ type: "horizontal" })
+      expect(question2[:data][:multiple_responses]).to be(true)
+    end
+
     it "converts a RTF from a Tempfile" do
       rtf = Tempfile.new("temp.rtf")
       original_content = File.read("spec/fixtures/simple.rtf")

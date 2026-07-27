@@ -191,7 +191,7 @@ module AtomicAssessmentsImport
         # ExamSoft has a dedicated Multiple Answer question type, but Learnosity does not, so we need to update the question type and UI style for those questions
         question_learnosity = question.to_learnosity
         if row["question type"] == "ma"
-          question_learnosity[:data][:ui_style] = { choice_label: "upper-alpha", type: "block" }
+          question_learnosity[:data][:ui_style] = { type: "horizontal" }
           question_learnosity[:data][:multiple_responses] = true
         end
 

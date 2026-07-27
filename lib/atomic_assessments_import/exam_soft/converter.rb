@@ -5,6 +5,8 @@ require "nokogiri"
 require "active_support/core_ext/digest/uuid"
 require "tmpdir"
 require "securerandom"
+require "zip"
+require "tempfile"
 
 require_relative "../utils"
 require_relative "classic_pipeline"
@@ -14,13 +16,21 @@ require_relative "format_detector"
 module AtomicAssessmentsImport
   module ExamSoft
     class Converter
+      SUPPORTED_EXTENSIONS = %w[.rtf .docx .html .htm].freeze
+
       def initialize(file)
         @file = file
       end
 
       def convert
         path = @file.is_a?(String) ? @file : @file.path
-        finalize_errors(convert_single(path, filename: File.basename(path)))
+        result =
+          if File.extname(path).casecmp(".zip").zero?
+            convert_zip(path)
+          else
+            convert_single(path, filename: File.basename(path))
+          end
+        finalize_errors(result)
       end
 
       # One exam document → items + one activity. Public: the zip path
@@ -68,6 +78,78 @@ module AtomicAssessmentsImport
       def finalize_errors(result)
         result[:errors].each_with_index { |error, index| error[:index] = index }
         result
+      end
+
+      def convert_zip(zip_path)
+        merged = { activities: [], items: [], questions: [], features: [], assets: {}, errors: [] }
+        converted_any = false
+
+        Zip::File.open(zip_path) do |zip|
+          zip.each do |entry|
+            next unless entry.file?
+            next if skip_entry?(entry.name)
+
+            unless SUPPORTED_EXTENSIONS.include?(File.extname(entry.name).downcase)
+              merged[:errors] << build_error("skipped unsupported file type", entry.name)
+              next
+            end
+
+            converted = convert_zip_entry(entry, merged)
+            converted_any ||= converted
+          end
+        end
+
+        unless converted_any
+          details = merged[:errors].map { |e| e[:message] }.join("; ")
+          suffix = details.empty? ? "" : ": #{details}"
+          raise AtomicAssessmentsImport::Error, "No files in the zip could be converted#{suffix}"
+        end
+
+        merged
+      end
+
+      def skip_entry?(name)
+        name.start_with?("__MACOSX/") || File.basename(name).start_with?(".")
+      end
+
+      def convert_zip_entry(entry, merged)
+        filename = File.basename(entry.name)
+
+        Tempfile.create(["examsoft_entry", File.extname(entry.name)]) do |tmp|
+          tmp.binmode
+          tmp.write(entry.get_input_stream.read)
+          tmp.flush
+
+          begin
+            result = convert_single(tmp.path, filename: filename)
+            merge_result!(merged, result)
+            true
+          rescue StandardError => e
+            # convert_single wraps its own failures in
+            # AtomicAssessmentsImport::Error, but this catches
+            # StandardError (not just that class) as a safety net so any
+            # exception escaping a single entry never aborts the rest of
+            # the zip.
+            merged[:errors] << build_error(e.message.sub("#{filename}: ", ""), filename, error_type: "error")
+            false
+          end
+        end
+      end
+
+      def merge_result!(merged, result)
+        %i[activities items questions features].each { |key| merged[key].concat(result[key]) }
+        merged[:assets].merge!(result[:assets])
+        merged[:errors].concat(result[:errors])
+      end
+
+      def build_error(message, filename, error_type: "warning", question_type: nil)
+        {
+          error_type: error_type,
+          question_type: question_type,
+          message: "#{filename}: #{message}",
+          qti_item_id: nil,
+          index: nil,
+        }
       end
 
       def source_format(path)

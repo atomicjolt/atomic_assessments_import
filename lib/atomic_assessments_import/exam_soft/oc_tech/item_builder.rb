@@ -82,8 +82,8 @@ module AtomicAssessmentsImport
           row = base_row(parsed).merge(
             "question type" => "multiple choice",
             "correct answer" => answer_letters(parsed),
-            "template" => parsed.type == :multiple_response ? "block layout multiple response" : "block layout",
           )
+          row["template"] = "multiple response" if parsed.type == :multiple_response
           parsed.options.each do |option|
             row["option #{option[:letter].downcase}"] = option[:label]
           end

@@ -27,6 +27,23 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::OcTech::ItemBuilder do
     expect(q[:data][:validation][:valid_response][:value]).to eq(["3"])
     expect(q[:data][:validation][:valid_response][:score]).to eq(20.0)
     expect(q[:data][:metadata][:general_feedback]).to eq("150/15")
+    expect(q[:data][:ui_style]).to eq({ type: "horizontal" })
+    expect(q[:data][:multiple_responses]).to be_falsey
+  end
+
+  it "builds a multiple-response MC with a horizontal layout" do
+    result = build(Parsed.new(
+                     number: 3, type: :multiple_response, stem_html: "<p>Select all that apply.</p>",
+                     options: [
+                       { letter: "A", label: "12" }, { letter: "B", label: "15" },
+                       { letter: "C", label: "20" }, { letter: "D", label: "10" }
+                     ],
+                     groups: [], metadata: { "question id" => "23272", "point value" => "20", "rationale" => "" },
+                     answers: [{ part: nil, text: "A. 12; C. 20" }], warnings: []
+                   ))
+    q = result[:questions].first
+    expect(q[:data][:ui_style]).to eq({ type: "horizontal" })
+    expect(q[:data][:multiple_responses]).to eq(true)
   end
 
   it "raises MissingAnswerError for scorable questions without answers" do

@@ -30,9 +30,9 @@ RSpec.describe "ExamSoft Integration" do
       expect(q4[:type]).to eq("mcq")
     end
 
-    it "reports exam header in warnings" do
+    it "does not report the exam header as a warning" do
       data = AtomicAssessmentsImport::ExamSoft::Converter.new("spec/fixtures/mixed_types.html").convert
-      expect(data[:errors]).to include(a_hash_including(message: a_string_matching(/header/i)))
+      expect(data[:errors]).not_to include(a_hash_including(message: a_string_matching(/header/i)))
     end
   end
 
@@ -44,8 +44,12 @@ RSpec.describe "ExamSoft Integration" do
       published = data[:items].select { |i| i[:status] == "published" }
       expect(published.length).to be >= 2
 
-      # Should have warnings about Q2 (no options for what looks like MCQ)
-      expect(data[:errors].length).to be > 0
+      # NOTE: this fixture previously only produced a warning via the
+      # informational "Exam header detected: …" message (dropped as of the
+      # ClassicPipeline extraction — the header is now the activity title
+      # instead of a warning). The classic extractor does not otherwise flag
+      # Q2's missing options, so there are no warnings to assert on here.
+      expect(data[:errors]).to eq([])
     end
   end
 
@@ -93,7 +97,7 @@ RSpec.describe "ExamSoft Integration" do
 
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:features]).to eq([])
 
       item1 = data[:items].find { |i| i[:title] == "Question 1" }

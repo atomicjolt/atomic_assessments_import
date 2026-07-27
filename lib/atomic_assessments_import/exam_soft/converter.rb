@@ -2,202 +2,199 @@
 
 require "pandoc-ruby"
 require "nokogiri"
-require "active_support/core_ext/digest/uuid"
+require "tmpdir"
+require "securerandom"
+require "zip"
+require "tempfile"
 
-require_relative "../questions/question"
-require_relative "../questions/multiple_choice"
-require_relative "../questions/essay"
-require_relative "../questions/short_answer"
-require_relative "../questions/fill_in_the_blank"
-require_relative "../questions/matching"
-require_relative "../questions/ordering"
 require_relative "../utils"
-require_relative "chunker"
-require_relative "extractor"
+require_relative "classic_pipeline"
+require_relative "html_normalizer"
+require_relative "format_detector"
 
 module AtomicAssessmentsImport
   module ExamSoft
     class Converter
+      SUPPORTED_EXTENSIONS = %w[.rtf .docx .html .htm].freeze
+
       def initialize(file)
         @file = file
       end
 
       def convert
-        html = normalize_to_html
-        doc = Nokogiri::HTML.fragment(html)
-        normalize_html_structure(doc)
-
-        # Chunk the document
-        chunk_result = Chunker.chunk(doc)
-        all_warnings = chunk_result[:warnings].map { |w| build_warning(w) }
-
-        if chunk_result[:chunks].length == 1
-          all_warnings << build_warning("Only 1 chunk detected — document may not be in a recognized format")
-        end
-
-        # Log header info if present
-        unless chunk_result[:header_nodes].empty?
-          header_text = chunk_result[:header_nodes].map { |n| n.text.strip }.join(" ")
-          all_warnings << build_warning("Exam header detected: #{header_text}") unless header_text.empty?
-        end
-
-        items = []
-        questions = []
-
-        chunk_result[:chunks].each_with_index do |chunk_nodes, index|
-          # Extract fields from this chunk
-          extraction = Extractor.extract(chunk_nodes)
-          extraction[:warnings].each do |w|
-            all_warnings << build_warning("Question #{index + 1}: #{w}", index: index, question_type: extraction[:row]["question type"])
+        path = @file.is_a?(String) ? @file : @file.path
+        result =
+          if File.extname(path).casecmp(".zip").zero?
+            convert_zip(path)
+          else
+            convert_single(path, filename: File.basename(path))
           end
+        finalize_errors(result)
+      end
 
-          row = extraction[:row]
-          status = extraction[:status]
+      # One exam document → items + one activity. Public: the zip path
+      # (Task 5) calls it per entry and finalizes once, zip-wide.
+      def convert_single(path, filename:)
+        Dir.mktmpdir("examsoft_media") do |media_dir|
+          html = PandocRuby.new([path], from: source_format(path), "extract-media" => media_dir).to_html
+          doc = Nokogiri::HTML.fragment(html)
+          HtmlNormalizer.normalize!(doc)
+          assets = collect_assets!(doc, media_dir)
 
-          # Skip completely unparseable chunks
-          if row["question text"].nil? && row["option a"].nil?
-            all_warnings << build_warning("Question #{index + 1}: Skipped — no usable content found", index: index)
-            next
-          end
+          format = FormatDetector.detect(doc)
+          pipeline = format ? format[:pipeline] : ClassicPipeline
+          result = pipeline.convert_document(doc)
 
-          next unless status == "published"
+          title = result[:title].presence || File.basename(filename, ".*")
+          errors = result[:errors].each { |e| e[:message] = "#{filename}: #{e[:message]}" }
+          raise AtomicAssessmentsImport::Error, "#{filename}: no questions could be converted" if result[:items].empty?
 
-          begin
-            item, question_widgets = convert_row(row, "published")
-            items << item
-            questions += question_widgets
-          rescue StandardError => e
-            title = row["title"] || "Question #{index + 1}"
-            all_warnings << build_warning("#{title}: #{e.message}", index: index, question_type: row["question type"])
-          end
+          {
+            activities: [build_activity(title, result[:items])],
+            items: result[:items],
+            questions: result[:questions],
+            features: result[:features],
+            assets: assets,
+            errors: errors,
+          }
         end
-
-        {
-          activities: [],
-          items: items,
-          questions: questions,
-          features: [],
-          errors: all_warnings,
-        }
+      rescue OcTech::ItemBuilder::MissingAnswerError => e
+        raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
+      rescue AtomicAssessmentsImport::Error
+        raise
+      rescue StandardError => e
+        raise AtomicAssessmentsImport::Error, "#{filename}: #{e.message}"
       end
 
       private
 
-      def build_warning(message, index: nil, question_type: nil)
-        {
-          error_type: "warning",
-          question_type: question_type,
-          message: message,
-          qti_item_id: nil,
-          index: index,
-        }
+      # Assigns each error a sequential, unique 0-based `index` across the
+      # whole outgoing result (file-wide for a single file, zip-wide when
+      # convert_single results have been merged). The Rails app persists
+      # errors via find_or_create_by(qti_item_id:, index:), so without this
+      # every error but the first would collide on the shared nil index and
+      # be silently dropped.
+      def finalize_errors(result)
+        result[:errors].each_with_index { |error, index| error[:index] = index }
+        result
       end
 
-      def normalize_html_structure(doc)
-        doc.css("p").each do |p_node|
-          br_children = p_node.css("br")
-          next if br_children.empty?
+      def convert_zip(zip_path)
+        merged = { activities: [], items: [], questions: [], features: [], assets: {}, errors: [] }
+        converted_any = false
 
-          # Split the <p> at each <br> into separate <p> elements
-          segments = []
-          current_segment = []
+        Zip::File.open(zip_path) do |zip|
+          zip.each do |entry|
+            next unless entry.file?
+            next if skip_entry?(entry.name)
 
-          p_node.children.each do |child|
-            if child.name == "br"
-              segments << current_segment unless current_segment.empty?
-              current_segment = []
-            else
-              current_segment << child
+            unless SUPPORTED_EXTENSIONS.include?(File.extname(entry.name).downcase)
+              merged[:errors] << build_error("skipped unsupported file type", entry.name)
+              next
             end
+
+            converted = convert_zip_entry(entry, merged)
+            converted_any ||= converted
           end
-          segments << current_segment unless current_segment.empty?
+        end
 
-          next if segments.length <= 1
+        unless converted_any
+          details = merged[:errors].map { |e| e[:message] }.join("; ")
+          suffix = details.empty? ? "" : ": #{details}"
+          raise AtomicAssessmentsImport::Error, "No files in the zip could be converted#{suffix}"
+        end
 
-          # Replace original <p> with multiple <p> elements
-          segments.reverse_each do |segment|
-            new_p = Nokogiri::XML::Node.new("p", doc)
-            segment.each { |child| new_p.add_child(child.clone) }
-            p_node.add_next_sibling(new_p)
+        merged
+      end
+
+      def skip_entry?(name)
+        name.start_with?("__MACOSX/") || File.basename(name).start_with?(".")
+      end
+
+      def convert_zip_entry(entry, merged)
+        filename = File.basename(entry.name)
+
+        Tempfile.create(["examsoft_entry", File.extname(entry.name)]) do |tmp|
+          tmp.binmode
+          tmp.write(entry.get_input_stream.read)
+          tmp.flush
+
+          begin
+            result = convert_single(tmp.path, filename: filename)
+            merge_result!(merged, result)
+            true
+          rescue StandardError => e
+            # convert_single wraps its own failures in
+            # AtomicAssessmentsImport::Error, but this catches
+            # StandardError (not just that class) as a safety net so any
+            # exception escaping a single entry never aborts the rest of
+            # the zip.
+            merged[:errors] << build_error(e.message.sub("#{filename}: ", ""), filename, error_type: "error")
+            false
           end
-          p_node.remove
         end
       end
 
-      def normalize_to_html
-        # Note: Pandoc Ruby takes either a file path or a string of content, but not a File object directly, so we have to handle both cases here
-        if @file.is_a?(String)
-          # File path as string
-          PandocRuby.new([@file], from: @file.split(".").last).to_html
-        elsif @file.respond_to?(:path) && @file.respond_to?(:read)
-          # File-like object (File, Tempfile, etc.)
-          source_type = @file.path.split(".").last.match(/^[a-zA-Z]+/)[0]
-          PandocRuby.new(@file.read, from: source_type).to_html
-        else
-          raise ArgumentError, "Expected a file path (String) or file-like object, got #{@file.class}"
-        end
+      def merge_result!(merged, result)
+        %i[activities items questions features].each { |key| merged[key].concat(result[key]) }
+        merged[:assets].merge!(result[:assets])
+        merged[:errors].concat(result[:errors])
       end
 
-      def categories_to_tags(categories)
-        tags = {}
-        (categories || []).each do |cat|
-          parts = cat.to_s.split("/")
-          key = parts.shift&.strip
-          value = parts.join("/").strip
-          next if key.blank? || value.blank?
-
-          key = key.delete(":")[0, 255]
-          value = value[0, 255]
-          next if key.blank? || value.blank?
-
-          tags[key.to_sym] ||= []
-          tags[key.to_sym] |= [value]
-        end
-        tags
-      end
-
-      def convert_row(row, status = "published")
-        source = "<p>ExamSoft Import on #{Time.now.strftime('%Y-%m-%d')}</p>\n"
-        source += "<p>External id: #{row['question id']}</p>\n" if row["question id"].present?
-
-        question = Questions::Question.load(row)
-        # ExamSoft has a dedicated Multiple Answer question type, but Learnosity does not, so we need to update the question type and UI style for those questions
-        question_learnosity = question.to_learnosity
-        if row["question type"] == "ma"
-          question_learnosity[:data][:ui_style] = { choice_label: "upper-alpha", type: "block" }
-          question_learnosity[:data][:multiple_responses] = true
-        end
-
-        item = {
-          reference: SecureRandom.uuid,
-          title: row["title"] || "",
-          status: status,
-          tags: categories_to_tags(row["category"]),
-          metadata: {
-            import_date: Time.now.iso8601,
-            import_type: row["import_type"] || "examsoft",
-          },
-          source: source,
-          description: row["description"] || "",
-          questions: [
-            {
-              reference: question.reference,
-              type: question.question_type,
-            },
-          ],
-          features: [],
-          definition: {
-            widgets: [
-              {
-                reference: question.reference,
-                widget_type: "response",
-              },
-            ],
-          },
+      def build_error(message, filename, error_type: "warning", question_type: nil)
+        {
+          error_type: error_type,
+          question_type: question_type,
+          message: "#{filename}: #{message}",
+          qti_item_id: nil,
+          index: nil,
         }
-        [item, [question_learnosity]]
       end
 
+      def source_format(path)
+        ext = File.extname(path).delete(".").downcase
+        ext = "html" if ext == "htm"
+        ext
+      end
+
+      # Pull pandoc-extracted media into memory, keyed by zip path, and
+      # rewrite <img src> to the ___EXPORT_ROOT___ convention the Rails
+      # importer's upload_assets! expects.
+      def collect_assets!(doc, media_dir)
+        assets = {}
+        doc.css("img").each do |img|
+          src = img["src"].to_s
+          local = File.expand_path(src.start_with?("/") ? src : File.join(media_dir, "..", src))
+          local = File.join(media_dir, File.basename(src)) unless File.exist?(local)
+          next unless File.exist?(local) &&
+                      File.expand_path(local).start_with?("#{File.expand_path(media_dir)}#{File::SEPARATOR}")
+
+          zip_path = "assets/#{File.basename(local)}"
+          assets[zip_path] = File.binread(local)
+          img["src"] = "___EXPORT_ROOT___/#{zip_path}"
+          img.remove_attribute("style")
+        end
+        assets
+      end
+
+      # NOTE(#2237): one activity per source file. The issue also asks that a single
+      # file containing MULTIPLE exams split into one activity each — deferred until a
+      # real classic-format sample shows what an exam boundary looks like (we have no
+      # sample defining one). Revisit when such a file exists.
+      def build_activity(title, items)
+        {
+          reference: SecureRandom.uuid,
+          title: title,
+          description: "",
+          data: {
+            config: { title: title },
+            rendering_type: "assess",
+            items: items.map { |i| { reference: i[:reference], id: i[:reference] } },
+          },
+          status: "published",
+          tags: {},
+        }
+      end
     end
   end
 end

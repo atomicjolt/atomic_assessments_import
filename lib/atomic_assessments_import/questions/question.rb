@@ -28,6 +28,10 @@ module AtomicAssessmentsImport
           Matching.new(row)
         when /ordering/i, /orderlist/i
           Ordering.new(row)
+        when /bowtie/i
+          Bowtie.new(row)
+        when /classification/i
+          Classification.new(row)
         else
           raise "Unknown question type #{row['question type']}"
         end
@@ -104,3 +108,5 @@ require_relative "fill_in_the_blank"
 require_relative "cloze_dropdown"
 require_relative "matching"
 require_relative "ordering"
+require_relative "bowtie"
+require_relative "classification"

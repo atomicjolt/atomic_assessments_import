@@ -17,6 +17,14 @@ module AtomicAssessmentsImport
         data[:items].each do |item|
           writer.write("items/#{item[:reference]}.json", item.to_json)
         end
+
+        (data[:features] || []).each do |feature|
+          writer.write("features/#{feature[:reference]}.json", feature.to_json)
+        end
+
+        (data[:assets] || {}).each do |zip_path, content|
+          writer.write(zip_path, content)
+        end
       end
     end
   end

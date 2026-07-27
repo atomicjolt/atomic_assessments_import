@@ -39,10 +39,11 @@ module AtomicAssessmentsImport
   ## docx
   register_converter("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "examsoft", ExamSoft::Converter)
   ## html
-  register_converter("text/html", "examsoft", ExamSoft::Converter) 
+  register_converter("text/html", "examsoft", ExamSoft::Converter)
   register_converter("application/xhtml+xml", "examsoft", ExamSoft::Converter)
+  ## zip (mixed classic/OC Tech entries, routed per-entry; see ExamSoft::Converter#convert)
+  register_converter("application/zip", "examsoft", ExamSoft::Converter)
 
-  
   def self.convert_to_aa_format(input_path, output_path, import_from: nil)
     result = convert(input_path, import_from)
     AtomicAssessmentsImport::Export.create(output_path, result)

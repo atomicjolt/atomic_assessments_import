@@ -12,7 +12,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
       path = "spec/fixtures/simple.docx"
       data = described_class.new(path).convert
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -64,14 +64,14 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "converts a DOCX from a Tempfile" do
-      docx = Tempfile.new("temp.docx")
+      docx = Tempfile.new(["temp", ".docx"])
       original_content = File.read("spec/fixtures/simple.docx")
       docx.write(original_content)
       docx.rewind
       data = described_class.new(docx).convert
 
 
-      expect(data[:activities]).to eq([])
+      expect(data[:activities].length).to eq(1)
       expect(data[:items].length).to eq(3)
       expect(data[:questions].length).to eq(3)
       expect(data[:features]).to eq([])
@@ -120,7 +120,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "warns if no options are given" do
-      no_options = Tempfile.new("temp.docx")
+      no_options = Tempfile.new(["temp", ".docx"])
       original_content = File.read("spec/fixtures/no_options.docx")
       no_options.write(original_content)
       no_options.rewind
@@ -130,7 +130,7 @@ RSpec.describe AtomicAssessmentsImport::ExamSoft::Converter do
     end
 
     it "warns if no correct answer is given" do
-      no_correct = Tempfile.new("temp.docx")
+      no_correct = Tempfile.new(["temp", ".docx"])
       original_content = File.read("spec/fixtures/no_correct.docx")
       no_correct.write(original_content)
       no_correct.rewind

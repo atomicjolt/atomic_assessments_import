@@ -3,12 +3,11 @@
 Import converters for atomic assessments.  Currently this GEM supports the following export and file types:
 * CSV 
     - Multiple Choice
-* ExamSoft (in RTF, HTML, or DOCX file format)
-    - Multiple Choice
-    - True/False
-    - Fill in the Blank / Cloze
-    - Ordering
-    - Essay
+* ExamSoft (in RTF, HTML, DOCX, or ZIP file format; auto-detects the classic export format vs.
+  the OC Tech exam-printout format per document)
+    - Classic: Multiple Choice, True/False, Fill in the Blank / Cloze, Ordering, Essay
+    - OC Tech exam printouts: Multiple Choice / Multiple Response, Fill in the Blank
+      (single and multi-part), Short Text, Drag and Drop / Classification, Bowtie
 
 For QTI conversion, see:
 
@@ -47,9 +46,46 @@ Convert a CSV to json on standard out:
 
     $ bin/convert_to_json input.csv
 
-Convert an ExamSoft RTF to a learnosity archive:
+Convert an ExamSoft file to a learnosity archive:
 
     $ bin/convert input.rtf output.zip examsoft
+
+Convert a ZIP of ExamSoft exam printouts to a learnosity archive:
+
+    $ bin/convert input.zip output.zip examsoft
+
+## ExamSoft input format
+
+The `examsoft` source accepts both of ExamSoft's export shapes and auto-detects which one
+each document is: the classic ExamSoft export format, and OC Tech's exam-printout format
+(answer-key copies of a proctored exam). Detection happens per document, so a single ZIP
+can freely mix classic and OC Tech files.
+
+* **Supported inputs:** `.rtf`, `.docx`, `.html`/`.xhtml`, and `.zip` archives containing
+  any mix of those file types.
+* **One activity per file/entry (#2237):** each source document (or ZIP entry) becomes
+  exactly one activity containing all of its questions, titled from the document's own
+  title/header or, if none is present, the file's basename.
+* **Question types per format:**
+  - Classic: Multiple Choice, True/False, Fill in the Blank / Cloze, Ordering, Essay
+  - OC Tech exam printouts: Multiple Choice / Multiple Response, Fill in the Blank
+    (single and multi-part), Short Text, Drag and Drop / Classification, Bowtie
+* **OC Tech answer-key requirement:** OC Tech printouts only carry answer information when
+  exported as an instructor/answer-key copy. Student-facing exports (e.g. exams that
+  have not yet been re-exported with the answer key) do not include this data, and
+  scorable questions (multiple choice, multiple response, fill in the blank, etc.)
+  cannot be converted without it. The converter raises an error identifying the
+  file when it detects a scorable question with no answer, rather than silently
+  producing an unscored item. Bowtie questions are exempt from this requirement —
+  they always import unscored, with a warning telling the teacher to set the
+  correct response in Learnosity authoring. This requirement does not apply to
+  classic ExamSoft documents.
+* **ZIP failure isolation:** when a ZIP is supplied, each entry is converted independently
+  and the results are merged; one entry failing (e.g. an OC Tech file missing its answer
+  key) does not stop the other entries from converting.
+* **Images:** any images embedded in the source document are extracted and included in
+  the output archive under `assets/`, with the corresponding question/item HTML rewritten
+  to reference them.
 
 ## CSV input format
 

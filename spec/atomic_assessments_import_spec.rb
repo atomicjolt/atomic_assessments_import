@@ -21,6 +21,8 @@ RSpec.describe AtomicAssessmentsImport do
           match(%r{questions/.+\.json}),
           match(%r{items/.+\.json}),
         )
+
+        expect(JSON.parse(zip_file.read("export.json"))).to eq("version" => "2.0")
       end
       out.unlink
     end
